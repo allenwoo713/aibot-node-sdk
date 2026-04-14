@@ -1,5 +1,7 @@
-import fs from 'fs';
+import fs from 'fs/promises';
+import path from 'path';
 import type { BotConfig } from './config';
+import type { Logger } from './types';
 
 export interface HistoryMessage {
   role: 'user' | 'assistant';
@@ -22,17 +24,36 @@ export class ConversationStore {
     BotConfig,
     'conversationTtlMs' | 'maxConversations' | 'maxHistoryMessages' | 'persistencePath'
   >;
+  private logger: Logger | undefined;
+  private initialized = false;
+  private initPromise: Promise<void> | null = null;
+  private saveQueue: Promise<void> = Promise.resolve();
 
-  constructor(config: Pick<BotConfig, 'conversationTtlMs' | 'maxConversations' | 'maxHistoryMessages' | 'persistencePath'>) {
+  constructor(config: Pick<BotConfig, 'conversationTtlMs' | 'maxConversations' | 'maxHistoryMessages' | 'persistencePath'> & { logger?: Logger }) {
     this.config = config;
-    this.load();
+    this.logger = config.logger;
+  }
+
+  /** Initialize once by loading state from disk. */
+  private init(): Promise<void> {
+    if (this.initialized) {
+      return Promise.resolve();
+    }
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+    this.initPromise = this.load().then(() => {
+      this.initialized = true;
+    });
+    return this.initPromise;
   }
 
   /** Load state from disk if the file exists. */
-  private load(): void {
+  private async load(): Promise<void> {
     try {
-      if (!fs.existsSync(this.config.persistencePath)) return;
-      const raw = fs.readFileSync(this.config.persistencePath, 'utf-8');
+      const exists = await fs.access(this.config.persistencePath).then(() => true).catch(() => false);
+      if (!exists) return;
+      const raw = await fs.readFile(this.config.persistencePath, 'utf-8');
       const parsed = JSON.parse(raw) as Record<string, ConversationRecord>;
       const now = Date.now();
       for (const [id, record] of Object.entries(parsed)) {
@@ -40,18 +61,28 @@ export class ConversationStore {
           this.store.set(id, record);
         }
       }
-    } catch {
-      // Ignore corrupt or unreadable state files — start fresh.
+    } catch (err) {
+      this.logger?.warn('Failed to load conversation state, starting fresh.', err);
     }
   }
 
   /** Persist state to disk. */
-  save(): void {
-    try {
-      const obj = Object.fromEntries(this.store.entries());
-      fs.writeFileSync(this.config.persistencePath, JSON.stringify(obj), 'utf-8');
-    } catch {
-      // Best-effort persistence.
+  save(): Promise<void> {
+    this.saveQueue = this.saveQueue.then(() => this.doSave()).catch((err) => {
+      this.logger?.warn('Failed to save conversation state.', err);
+    });
+    return this.saveQueue;
+  }
+
+  private async doSave(): Promise<void> {
+    const obj = Object.fromEntries(this.store.entries());
+    const data = JSON.stringify(obj);
+    if (process.platform !== 'win32') {
+      const tmpPath = `${this.config.persistencePath}.tmp`;
+      await fs.writeFile(tmpPath, data, 'utf-8');
+      await fs.rename(tmpPath, this.config.persistencePath);
+    } else {
+      await fs.writeFile(this.config.persistencePath, data, 'utf-8');
     }
   }
 
@@ -65,7 +96,8 @@ export class ConversationStore {
   }
 
   /** Append a message to a conversation. */
-  append(conversationId: string, message: Omit<HistoryMessage, 'timestamp'>): void {
+  async append(conversationId: string, message: Omit<HistoryMessage, 'timestamp'>): Promise<void> {
+    await this.init();
     this.evictIfExpired(conversationId);
 
     let record = this.store.get(conversationId);
@@ -86,19 +118,21 @@ export class ConversationStore {
       record.messages = record.messages.slice(-this.config.maxHistoryMessages);
     }
 
-    this.save();
+    await this.save();
   }
 
   /** Clear a specific conversation. */
-  clear(conversationId: string): void {
+  async clear(conversationId: string): Promise<void> {
+    await this.init();
     this.store.delete(conversationId);
-    this.save();
+    await this.save();
   }
 
   /** Clear all conversations. */
-  clearAll(): void {
+  async clearAll(): Promise<void> {
+    await this.init();
     this.store.clear();
-    this.save();
+    await this.save();
   }
 
   /** Build full message list including the system prompt at the front. */
