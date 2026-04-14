@@ -4,6 +4,8 @@ import type { BotConfig } from '../config';
 import { ConversationStore } from '../memory';
 import { AnthropicApiAdapter } from '../ai/api-adapter';
 import { chunkMessage } from '../chunker';
+import { DefaultLogger } from '../logger';
+import type { Logger } from '../types';
 
 interface RateLimitEntry {
   count: number;
@@ -15,16 +17,18 @@ export class BotOrchestrator {
   private store: ConversationStore;
   private adapter: AnthropicApiAdapter;
   private config: BotConfig;
+  private logger: Logger;
   private rateLimits = new Map<string, RateLimitEntry>();
 
   constructor(config: BotConfig) {
     this.config = config;
+    this.logger = config.logger ?? new DefaultLogger('BotOrchestrator');
     this.wsClient = new WSClient({
       botId: config.botId,
       secret: config.secret,
       ...(config.wsUrl && { wsUrl: config.wsUrl }),
     });
-    this.store = new ConversationStore(config);
+    this.store = new ConversationStore({ ...config, logger: this.logger });
     this.adapter = new AnthropicApiAdapter(config);
 
     this.setupEventHandlers();
@@ -89,7 +93,7 @@ export class BotOrchestrator {
     }
 
     // Append assistant reply to memory
-    this.store.append(conversationId, { role: 'assistant', content: result.content });
+    await this.store.append(conversationId, { role: 'assistant', content: result.content });
 
     const chunks = chunkMessage(result.content);
     if (chunks.length === 0) {

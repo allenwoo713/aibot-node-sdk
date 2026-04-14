@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import type { Logger } from './types';
 
 export interface BotConfig {
   /** WeCom bot ID */
@@ -32,6 +33,8 @@ export interface BotConfig {
   internalSystemPrompt: string;
   /** System prompt for external contacts */
   externalSystemPrompt: string;
+  /** Optional logger for observability */
+  logger?: Logger;
 }
 
 function getEnv(key: string, defaultValue?: string): string {
