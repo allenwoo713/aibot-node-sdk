@@ -18,7 +18,11 @@
   3. Existing external consumers of `ConversationStore` do not need to change their code (API signature preserved)
   4. Corrupt or missing persistence files are handled gracefully without crashing the process
   5. Unit tests verify concurrent write serialization and error recovery behaviors
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plan list:
+- [ ] `01-01-PLAN.md` — Refactor `ConversationStore` to async I/O with lazy init and write queue
+- [ ] `01-02-PLAN.md` — Update `BotOrchestrator` callers and add unit tests for concurrency and error recovery
 
 ### Phase 2: HTTP Fallback Transport
 **Goal**: SDK can send and receive messages via WeCom HTTP APIs when WebSocket is unavailable, with unified Transport abstraction
@@ -45,6 +49,6 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Async Persistence Refactor | 0/0 | Not started | - |
+| 1. Async Persistence Refactor | 2/2 | Planned | - |
 | 2. HTTP Fallback Transport | 0/0 | Not started | - |
 | 3. Integration & E2E Validation | 0/0 | Not started | - |
