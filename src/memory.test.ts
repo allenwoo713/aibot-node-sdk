@@ -174,9 +174,9 @@ describe('ConversationStore', () => {
           maxInFlight = inFlight;
         }
         await new Promise((resolve) => setTimeout(resolve, 10));
+        // Use sync write to avoid recursive mock invocation
+        fs.writeFileSync(filePath as string, data as string, encoding as fs.WriteFileOptions);
         inFlight -= 1;
-        // Delegate to actual implementation to still write the file
-        return fsPromises.writeFile(filePath as string, data as string, encoding as fsPromises.WriteFileOptions);
       });
 
       await Promise.all([
