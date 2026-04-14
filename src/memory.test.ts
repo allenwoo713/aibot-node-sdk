@@ -1,9 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import path from 'path';
 import { ConversationStore } from './memory';
 
 const TEST_PERSISTENCE_PATH = path.resolve(__dirname, '../.test-bot-state.json');
+
+function createMockLogger() {
+  return {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  };
+}
 
 function createStore(ttlMs = 60000, maxConversations = 1000, maxHistory = 20, logger?: any) {
   return new ConversationStore({
@@ -34,6 +44,7 @@ describe('ConversationStore', () => {
     } catch {
       // ignore cleanup errors
     }
+    vi.restoreAllMocks();
   });
 
   it('returns empty history for unknown conversation', () => {
@@ -117,65 +128,106 @@ describe('ConversationStore', () => {
     expect(store.get('c1')).toEqual([]);
   });
 
-  it('lazy init: constructor does not read disk', async () => {
-    // Write a persistence file manually
-    fs.writeFileSync(TEST_PERSISTENCE_PATH, JSON.stringify({
-      c1: { messages: [{ role: 'user', content: 'lazy', timestamp: Date.now() }], lastAccessedAt: Date.now() },
-    }), 'utf-8');
+  describe('async persistence', () => {
+    it('lazy initializes on first mutation', async () => {
+      fs.writeFileSync(
+        TEST_PERSISTENCE_PATH,
+        JSON.stringify({
+          c1: {
+            messages: [{ role: 'user', content: 'lazy', timestamp: Date.now() }],
+            lastAccessedAt: Date.now(),
+          },
+        }),
+        'utf-8',
+      );
 
-    const store = createStore();
-    // get is sync and should not trigger load, so it returns empty before init
-    expect(store.get('c1')).toEqual([]);
+      const readFileSpy = vi.spyOn(fsPromises, 'readFile');
 
-    // append triggers init and load
-    await store.append('c1', { role: 'assistant', content: 'loaded' });
-    const history = store.get('c1');
-    expect(history).toHaveLength(2);
-    expect(history[0].content).toBe('lazy');
-    expect(history[1].content).toBe('loaded');
-  });
+      const store = createStore();
+      // Constructor should not trigger readFile
+      expect(readFileSpy).not.toHaveBeenCalled();
 
-  it('write queue: concurrent appends result in valid file', async () => {
-    const store = createStore();
-    await Promise.all([
-      store.append('c1', { role: 'user', content: 'a' }),
-      store.append('c1', { role: 'user', content: 'b' }),
-      store.append('c1', { role: 'user', content: 'c' }),
-    ]);
+      // get is sync and should not trigger load either
+      expect(store.get('c1')).toEqual([]);
+      expect(readFileSpy).not.toHaveBeenCalled();
 
-    const raw = fs.readFileSync(TEST_PERSISTENCE_PATH, 'utf-8');
-    const parsed = JSON.parse(raw);
-    expect(parsed.c1.messages).toHaveLength(3);
-  });
+      // append triggers init and load
+      await store.append('c1', { role: 'assistant', content: 'loaded' });
+      expect(readFileSpy).toHaveBeenCalledTimes(1);
+      expect(readFileSpy).toHaveBeenCalledWith(TEST_PERSISTENCE_PATH, 'utf-8');
 
-  it('corrupt file: loads gracefully with logger warning', async () => {
-    fs.writeFileSync(TEST_PERSISTENCE_PATH, 'not-json', 'utf-8');
-    const logger = { warn: vi.fn() };
-    const store = createStore(60000, 1000, 20, logger);
-
-    await store.append('c1', { role: 'user', content: 'ok' });
-    expect(logger.warn).toHaveBeenCalled();
-    expect(store.get('c1')).toHaveLength(1);
-  });
-
-  it('logger: I/O errors emit warn log', async () => {
-    const logger = { warn: vi.fn() };
-    // Create a read-only file so subsequent write fails with EACCES/EPERM
-    const roPath = path.resolve(__dirname, '../.test-bot-state-ro.json');
-    fs.writeFileSync(roPath, '{}', 'utf-8');
-    fs.chmodSync(roPath, 0o444);
-
-    const store = new ConversationStore({
-      conversationTtlMs: 60000,
-      maxConversations: 1000,
-      maxHistoryMessages: 20,
-      persistencePath: roPath,
-      logger,
+      const history = store.get('c1');
+      expect(history).toHaveLength(2);
+      expect(history[0].content).toBe('lazy');
+      expect(history[1].content).toBe('loaded');
     });
-    await store.append('c1', { role: 'user', content: 'x' });
 
-    // Restore permissions so afterEach cleanup can remove it
-    try { fs.chmodSync(roPath, 0o666); } catch {}
-    expect(logger.warn).toHaveBeenCalled();
+    it('serializes concurrent writes', async () => {
+      const store = createStore();
+
+      let inFlight = 0;
+      let maxInFlight = 0;
+
+      const writeFileSpy = vi.spyOn(fsPromises, 'writeFile').mockImplementation(async (filePath, data, encoding) => {
+        inFlight += 1;
+        if (inFlight > maxInFlight) {
+          maxInFlight = inFlight;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        inFlight -= 1;
+        // Delegate to actual implementation to still write the file
+        return fsPromises.writeFile(filePath as string, data as string, encoding as fsPromises.WriteFileOptions);
+      });
+
+      await Promise.all([
+        store.append('c1', { role: 'user', content: 'a' }),
+        store.append('c1', { role: 'user', content: 'b' }),
+        store.append('c1', { role: 'user', content: 'c' }),
+        store.append('c1', { role: 'user', content: 'd' }),
+        store.append('c1', { role: 'user', content: 'e' }),
+      ]);
+
+      // Because the queue chains saves, only one write should be in flight at a time
+      expect(maxInFlight).toBe(1);
+
+      const raw = fs.readFileSync(TEST_PERSISTENCE_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      expect(parsed.c1.messages).toHaveLength(5);
+      expect(parsed.c1.messages.map((m: any) => m.content)).toEqual(['a', 'b', 'c', 'd', 'e']);
+
+      writeFileSpy.mockRestore();
+    });
+
+    it('recovers from corrupt persistence file and logs warning', async () => {
+      fs.writeFileSync(TEST_PERSISTENCE_PATH, '{"broken"', 'utf-8');
+      const logger = createMockLogger();
+      const store = createStore(60000, 1000, 20, logger);
+
+      await store.append('c1', { role: 'user', content: 'hello' });
+
+      expect(logger.warn).toHaveBeenCalled();
+      const warnCall = logger.warn.mock.calls.find((call) =>
+        typeof call[0] === 'string' && call[0].includes('load conversation state'),
+      );
+      expect(warnCall).toBeTruthy();
+
+      expect(store.get('c1')).toHaveLength(1);
+      expect(store.get('c1')[0].content).toBe('hello');
+    });
+
+    it('logs warning on save failure without throwing', async () => {
+      const logger = createMockLogger();
+      const store = createStore(60000, 1000, 20, logger);
+
+      vi.spyOn(fsPromises, 'writeFile').mockRejectedValue(new Error('disk full'));
+
+      await expect(store.append('c1', { role: 'user', content: 'hello' })).resolves.toBeUndefined();
+
+      expect(logger.warn).toHaveBeenCalled();
+      const warnCall = logger.warn.mock.calls.find((call) =>
+        typeof call[0] === 'string' && call[0].includes('save conversation state'),
+      );
+      expect(warnCall).toBeTruthy();
+    });
   });
 });
