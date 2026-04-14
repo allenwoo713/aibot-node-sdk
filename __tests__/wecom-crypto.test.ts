@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { WecomCrypto } from "../src/wecom-crypto/index";
 
 describe("WecomCrypto", () => {
-  const encodingAESKey = "<your encodingAESKey>";
-  const token = "<your token>";
+  const encodingAESKey = "w8DKThgEBnvx0vqVYlDgzDpY/rugX9mxQZkKaywjjN0";
+  const token = "test-token";
   const crypto = new WecomCrypto(token, encodingAESKey, "");
 
   it("round-trips plaintext", () => {

@@ -4,10 +4,10 @@ import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import { dts } from 'rollup-plugin-dts';
 
-const external = ['ws', 'axios', 'eventemitter3', 'crypto', 'buffer'];
+const external = ['ws', 'axios', 'eventemitter3', 'crypto', 'buffer', '@anthropic-ai/sdk', 'fs', 'path'];
 
 export default [
-  // CJS & ESM 输出
+  // CJS & ESM 输出（SDK 库）
   {
     input: 'src/index.ts',
     output: [
@@ -40,5 +40,28 @@ export default [
     input: 'dist/index.d.ts',
     output: [{ file: 'dist/index.d.ts', format: 'esm' }],
     plugins: [dts()],
+  },
+  // Bot service entry point
+  {
+    input: 'src/bot/entry.ts',
+    output: [
+      {
+        file: 'dist/bot/entry.js',
+        format: 'cjs',
+        sourcemap: true,
+        exports: 'auto',
+      },
+    ],
+    external,
+    plugins: [
+      resolve({ preferBuiltins: true }),
+      commonjs(),
+      json(),
+      typescript({
+        tsconfig: './tsconfig.json',
+        declaration: false,
+        declarationDir: undefined,
+      }),
+    ],
   },
 ];

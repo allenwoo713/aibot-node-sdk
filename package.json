@@ -16,6 +16,7 @@
     "release": "node scripts/publish-all.mjs",
     "release:dry": "node scripts/publish-all.mjs --dry-run",
     "example": "ts-node examples/basic.ts",
+    "start": "ts-node src/bot/entry.ts",
     "test": "vitest run"
   },
   "keywords": [
@@ -36,6 +37,7 @@
     "url": "https://github.com/WecomTeam/aibot-node-sdk/issues"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.88.0",
     "axios": "^1.6.7",
     "eventemitter3": "^5.0.1",
     "ws": "^8.16.0"
