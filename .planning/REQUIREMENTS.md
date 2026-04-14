@@ -48,19 +48,19 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PERSIST-01 | — | pending |
-| PERSIST-02 | — | pending |
-| PERSIST-03 | — | pending |
-| PERSIST-04 | — | pending |
-| PERSIST-05 | — | pending |
-| TRANS-01 | — | pending |
-| TRANS-02 | — | pending |
-| TRANS-03 | — | pending |
-| TRANS-04 | — | pending |
-| TRANS-05 | — | pending |
-| COMPAT-01 | — | pending |
-| COMPAT-02 | — | pending |
-| COMPAT-03 | — | pending |
-| TEST-01 | — | pending |
-| TEST-02 | — | pending |
-| TEST-03 | — | pending |
+| PERSIST-01 | Phase 1 | pending |
+| PERSIST-02 | Phase 1 | pending |
+| PERSIST-03 | Phase 1 | pending |
+| PERSIST-04 | Phase 1 | pending |
+| PERSIST-05 | Phase 1 | pending |
+| TRANS-01 | Phase 2 | pending |
+| TRANS-02 | Phase 2 | pending |
+| TRANS-03 | Phase 2 | pending |
+| TRANS-04 | Phase 2 | pending |
+| TRANS-05 | Phase 2 | pending |
+| COMPAT-01 | Phase 1 | pending |
+| COMPAT-02 | Phase 1 | pending |
+| COMPAT-03 | Phase 2 | pending |
+| TEST-01 | Phase 1 | pending |
+| TEST-02 | Phase 2 | pending |
+| TEST-03 | Phase 3 | pending |
