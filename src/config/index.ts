@@ -13,6 +13,10 @@ export interface BotConfig {
   anthropicModel: string;
   /** WebSocket URL (optional) */
   wsUrl?: string;
+  /** WeCom corp ID (optional, defaults to botId) */
+  corpId?: string;
+  /** WeCom agent ID (optional, defaults to botId) */
+  agentId?: string;
   /** Conversation TTL in milliseconds */
   conversationTtlMs: number;
   /** Max conversations in memory */
@@ -63,6 +67,8 @@ export function loadConfig(): BotConfig {
     anthropicApiKey: getEnv('ANTHROPIC_API_KEY'),
     anthropicModel: getEnv('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022'),
     wsUrl: process.env.WS_URL || undefined,
+    corpId: process.env.CORP_ID || getEnv('BOT_ID'),
+    agentId: process.env.AGENT_ID || getEnv('BOT_ID'),
     conversationTtlMs: getEnvInt('CONVERSATION_TTL_MS', 30 * 60 * 1000),
     maxConversations: getEnvInt('MAX_CONVERSATIONS', 1000),
     maxHistoryMessages: getEnvInt('MAX_HISTORY_MESSAGES', 20),

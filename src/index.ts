@@ -16,6 +16,12 @@ export { WecomCrypto, decodeEncodingAESKey, pkcs7Pad, pkcs7Unpad } from './wecom
 export { decryptFile } from './crypto';
 export { DefaultLogger } from './logger';
 export { generateReqId, generateRandomString } from './utils';
+export type { Transport } from './types/transport';
+export type { CallbackPayload, CallbackResponse, TransportEventMap } from './types/transport';
+export { WsTransport } from './transport/ws-transport';
+export { HttpTransport } from './transport/http-transport';
+export { FallbackTransport } from './transport/fallback-transport';
+export { handleCallback } from './transport/http-callback';
 export {
   MessageType,
   EventType,
