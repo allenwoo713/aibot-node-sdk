@@ -3,7 +3,7 @@
 ## Phases
 
 - [x] **Phase 1: Async Persistence Refactor** - Replace synchronous file I/O in `ConversationStore` with async I/O, internal write queue, and backward-compatible API
-- [ ] **Phase 2: HTTP Fallback Transport** - Add WeCom HTTP API send/receive capabilities with access token caching, callback handling, and unified `Transport` interface
+- [x] **Phase 2: HTTP Fallback Transport** - Add WeCom HTTP API send/receive capabilities with access token caching, callback handling, and unified `Transport` interface
 - [ ] **Phase 3: Integration & E2E Validation** - Verify `BotOrchestrator` works seamlessly across WebSocket and HTTP transports with end-to-end tests
 
 ## Phase Details
@@ -36,10 +36,10 @@ Plan list:
 **Plans**: 4 plans
 
 Plan list:
-- [ ] `02-01-PLAN.md` — Create Transport interface, extend WeComApiClient with token/message APIs, and build WsTransport wrapper
-- [ ] `02-02-PLAN.md` — Implement HttpTransport with TokenCache, framework-agnostic callback handler, and FallbackTransport
-- [ ] `02-03-PLAN.md` — Refactor BotOrchestrator to accept Transport, wire FallbackTransport in entry point, and update SDK exports
-- [ ] `02-04-PLAN.md` — Add unit tests for HttpTransport, callback handler, and FallbackTransport routing/deduplication
+- [x] `02-01-PLAN.md` — Create Transport interface, extend WeComApiClient with token/message APIs, and build WsTransport wrapper
+- [x] `02-02-PLAN.md` — Implement HttpTransport with TokenCache, framework-agnostic callback handler, and FallbackTransport
+- [x] `02-03-PLAN.md` — Refactor BotOrchestrator to accept Transport, wire FallbackTransport in entry point, and update SDK exports
+- [x] `02-04-PLAN.md` — Add unit tests for HttpTransport, callback handler, and FallbackTransport routing/deduplication
 
 ### Phase 3: Integration & E2E Validation
 **Goal**: Bot orchestrator works seamlessly across both WebSocket and HTTP transports, verified by end-to-end tests
@@ -56,5 +56,5 @@ Plan list:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Async Persistence Refactor | 2/2 | Complete | - |
-| 2. HTTP Fallback Transport | 0/4 | Planned | - |
+| 2. HTTP Fallback Transport | 4/4 | Complete | 2026-04-15 |
 | 3. Integration & E2E Validation | 0/0 | Not started | - |
