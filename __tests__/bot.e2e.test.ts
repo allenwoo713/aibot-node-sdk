@@ -26,6 +26,18 @@ vi.mock('../src/ai/api-adapter', () => ({
   }),
 }));
 
+vi.mock('../src/client', () => ({
+  WSClient: class MockWSClient extends EventEmitter {
+    connect = vi.fn();
+    disconnect = vi.fn();
+    replyStream = vi.fn().mockResolvedValue(undefined);
+  },
+}));
+
+vi.mock('../src/utils', () => ({
+  generateReqId: vi.fn().mockReturnValue('stream-e2e'),
+}));
+
 import { BotOrchestrator } from '../src/bot';
 import type { WsFrame, TextMessage } from '../src/types';
 
@@ -79,12 +91,12 @@ describe('Bot E2E', () => {
     });
 
     const frame = createMockFrame();
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
 
     await new Promise((r) => setTimeout(r, 50));
 
     expect(chatMock).toHaveBeenCalledTimes(1);
-    const wsClient = (bot as any).wsClient;
+    const wsClient = (bot as any).transport.wsClient;
     expect(wsClient.replyStream).toHaveBeenCalledWith(
       frame,
       'stream-e2e',
@@ -116,11 +128,11 @@ describe('Bot E2E', () => {
     });
 
     const frame = createMockFrame();
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
 
     await new Promise((r) => setTimeout(r, 50));
 
-    const wsClient = (bot as any).wsClient;
+    const wsClient = (bot as any).transport.wsClient;
     expect(wsClient.replyStream).toHaveBeenCalledWith(
       frame,
       'stream-e2e',

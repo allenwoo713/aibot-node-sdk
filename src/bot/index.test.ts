@@ -5,7 +5,7 @@ import type { WsFrame, TextMessage } from '../types';
 import fs from 'fs';
 import path from 'path';
 
-const TEST_PERSISTENCE_PATH = path.resolve(__dirname, '../../.test-bot-state.json');
+const TEST_PERSISTENCE_PATH = path.resolve(__dirname, '../../.test-bot-state-unit.json');
 
 // Mock the SDK exports used by the bot
 vi.mock('..', async () => {
