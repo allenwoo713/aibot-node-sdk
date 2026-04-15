@@ -80,7 +80,8 @@ export class BotOrchestrator {
     const contactType = this.detectContactType(frame);
     const systemPrompt = contactType === 'external' ? this.config.externalSystemPrompt : this.config.internalSystemPrompt;
 
-    const history = this.store.buildMessages(conversationId, systemPrompt, content);
+    await this.store.append(conversationId, { role: 'user', content });
+    const history = this.store.buildMessages(conversationId, systemPrompt);
 
     const result = await this.adapter.chat({
       conversationId,

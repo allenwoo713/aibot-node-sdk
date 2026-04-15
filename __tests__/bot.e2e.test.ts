@@ -142,4 +142,46 @@ describe('Bot E2E', () => {
 
     bot.stop();
   });
+
+  it('end-to-end: multi-turn conversation maintains history', async () => {
+    chatMock
+      .mockResolvedValueOnce({ content: 'First reply' })
+      .mockResolvedValueOnce({ content: 'Second reply' });
+
+    const bot = new BotOrchestrator({
+      botId: 'bot-e2e',
+      secret: 'secret',
+      anthropicApiKey: 'key',
+      anthropicModel: 'claude-test',
+      conversationTtlMs: 60000,
+      maxConversations: 100,
+      maxHistoryMessages: 10,
+      rateLimitRequests: 10,
+      rateLimitWindowMs: 60000,
+      apiTimeoutMs: 5000,
+      maxOutputTokens: 100,
+      persistencePath: TEST_PERSISTENCE_PATH,
+      internalSystemPrompt: 'You are helpful.',
+      externalSystemPrompt: 'You are a guest helper.',
+    });
+
+    const frame1 = createMockFrame({ from: { userid: 'user-e2e' }, text: { content: 'Hello' } });
+    (bot as any).transport.emit('message.text', frame1);
+    await new Promise((r) => setTimeout(r, 50));
+
+    const frame2 = createMockFrame({ from: { userid: 'user-e2e' }, text: { content: 'Follow up' } });
+    (bot as any).transport.emit('message.text', frame2);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(chatMock).toHaveBeenCalledTimes(2);
+    const secondCall = chatMock.mock.calls[1][0];
+    expect(secondCall.history).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: 'user', content: 'Hello' }),
+        expect.objectContaining({ role: 'assistant', content: 'First reply' }),
+      ]),
+    );
+
+    bot.stop();
+  });
 });

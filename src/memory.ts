@@ -139,14 +139,16 @@ export class ConversationStore {
   buildMessages(
     conversationId: string,
     systemPrompt: string,
-    incomingUserMessage: string,
+    incomingUserMessage?: string,
   ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
     const history = this.get(conversationId);
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: systemPrompt },
       ...history.map((m) => ({ role: m.role, content: m.content })),
-      { role: 'user', content: incomingUserMessage },
     ];
+    if (incomingUserMessage !== undefined) {
+      messages.push({ role: 'user', content: incomingUserMessage });
+    }
     return messages;
   }
 
