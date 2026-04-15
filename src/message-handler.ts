@@ -6,7 +6,7 @@ import type {
 } from './types';
 import { MessageType, WsCmd } from './types';
 import type { EventMessage } from './types';
-import type { WSClient } from './client';
+import { EventEmitter } from 'eventemitter3';
 
 /**
  * 消息处理器
@@ -29,7 +29,7 @@ export class MessageHandler {
    * @param frame - WebSocket 接收帧
    * @param emitter - WSClient 实例，用于触发事件
    */
-  handleFrame(frame: WsFrame, emitter: WSClient): void {
+  handleFrame(frame: WsFrame, emitter: EventEmitter<WSClientEventMap>): void {
     try {
       const body = frame.body;
 
@@ -54,7 +54,7 @@ export class MessageHandler {
   /**
    * 处理消息推送回调 (aibot_msg_callback)
    */
-  private handleMessageCallback(frame: WsFrame, emitter: WSClient): void {
+  private handleMessageCallback(frame: WsFrame, emitter: EventEmitter<WSClientEventMap>): void {
     const body = frame.body as BaseMessage;
 
     // 触发通用消息事件
@@ -89,7 +89,7 @@ export class MessageHandler {
   /**
    * 处理事件推送回调 (aibot_event_callback)
    */
-  private handleEventCallback(frame: WsFrame, emitter: WSClient): void {
+  private handleEventCallback(frame: WsFrame, emitter: EventEmitter<WSClientEventMap>): void {
     const body = frame.body as EventMessage;
 
     // 触发通用事件

@@ -80,3 +80,9 @@ export {
   type EventMessageWith,
   type WSClientEventMap,
 } from './event';
+export type {
+  Transport,
+  TransportEventMap,
+  CallbackPayload,
+  CallbackResponse,
+} from './transport';
