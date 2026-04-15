@@ -12,12 +12,20 @@ vi.mock('..', async () => {
   const actual = await vi.importActual('..');
   return {
     ...actual,
-    WSClient: class MockWSClient extends EventEmitter {
-      connect = vi.fn();
-      disconnect = vi.fn();
-      replyStream = vi.fn().mockResolvedValue(undefined);
-    },
     generateReqId: vi.fn().mockReturnValue('stream-123'),
+  };
+});
+
+vi.mock('../transport', async () => {
+  const { EventEmitter } = await vi.importActual('eventemitter3');
+  return {
+    WsTransport: class MockWsTransport extends EventEmitter {
+      connect = vi.fn();
+      stop = vi.fn();
+      sendText = vi.fn().mockResolvedValue(undefined);
+      sendStream = vi.fn().mockResolvedValue(undefined);
+      isConnected = vi.fn().mockReturnValue(true);
+    },
   };
 });
 
@@ -82,14 +90,14 @@ describe('BotOrchestrator', () => {
 
     const bot = createBot();
     const frame = createMockFrame();
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
 
     // Wait for async handler
     await new Promise((r) => setTimeout(r, 50));
 
     expect(chatMock).toHaveBeenCalledTimes(1);
-    const wsClient = (bot as any).wsClient;
-    expect(wsClient.replyStream).toHaveBeenCalledWith(frame, 'stream-123', 'Hi there', true);
+    const transport = (bot as any).transport;
+    expect(transport.sendStream).toHaveBeenCalledWith(frame, 'stream-123', 'Hi there', true);
   });
 
   it('sends fallback when AI returns an error', async () => {
@@ -97,12 +105,12 @@ describe('BotOrchestrator', () => {
 
     const bot = createBot();
     const frame = createMockFrame();
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
 
     await new Promise((r) => setTimeout(r, 50));
 
-    const wsClient = (bot as any).wsClient;
-    expect(wsClient.replyStream).toHaveBeenCalledWith(frame, 'stream-123', 'AI is down', true);
+    const transport = (bot as any).transport;
+    expect(transport.sendText).toHaveBeenCalledWith(frame, 'AI is down');
   });
 
   it('rate limits excess requests per conversation', async () => {
@@ -112,19 +120,19 @@ describe('BotOrchestrator', () => {
     const frame = createMockFrame();
 
     // 1st request
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
     await new Promise((r) => setTimeout(r, 20));
     // 2nd request
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
     await new Promise((r) => setTimeout(r, 20));
     // 3rd request — should be rate limited
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
     await new Promise((r) => setTimeout(r, 20));
 
     expect(chatMock).toHaveBeenCalledTimes(2);
-    const wsClient = (bot as any).wsClient;
-    const rateLimitCalls = (wsClient.replyStream as any).mock.calls.filter(
-      (c: any[]) => c[2] === '请求太多了，请稍后再试。',
+    const transport = (bot as any).transport;
+    const rateLimitCalls = (transport.sendText as any).mock.calls.filter(
+      (c: any[]) => c[1] === '请求太多了，请稍后再试。',
     );
     expect(rateLimitCalls.length).toBe(1);
   });
@@ -136,7 +144,7 @@ describe('BotOrchestrator', () => {
     const frame = createMockFrame({
       external: true,
     } as any);
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
 
     await new Promise((r) => setTimeout(r, 50));
 
@@ -149,7 +157,7 @@ describe('BotOrchestrator', () => {
 
     const bot = createBot();
     const frame = createMockFrame({ chattype: 'group', chatid: 'group-1' });
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
 
     await new Promise((r) => setTimeout(r, 50));
 
@@ -165,7 +173,7 @@ describe('BotOrchestrator', () => {
       chatid: 'group-1',
       mention: [{ userid: 'bot-1' }],
     } as any);
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
 
     await new Promise((r) => setTimeout(r, 50));
 
@@ -177,12 +185,12 @@ describe('BotOrchestrator', () => {
 
     const bot = createBot();
     const frame = createMockFrame();
-    (bot as any).wsClient.emit('message.text', frame);
+    (bot as any).transport.emit('message.text', frame);
 
     await new Promise((r) => setTimeout(r, 50));
 
-    const wsClient = (bot as any).wsClient;
-    const calls = (wsClient.replyStream as any).mock.calls;
+    const transport = (bot as any).transport;
+    const calls = (transport.sendStream as any).mock.calls;
     expect(calls.length).toBeGreaterThan(1);
     // Last call should finish the stream
     expect(calls[calls.length - 1][3]).toBe(true);

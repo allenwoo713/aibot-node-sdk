@@ -1,4 +1,6 @@
-import { WSClient, generateReqId } from '..';
+import { generateReqId } from '..';
+import type { Transport } from '../transport';
+import { WsTransport } from '../transport';
 import type { WsFrame, TextMessage } from '../types';
 import type { BotConfig } from '../config';
 import { ConversationStore } from '../memory';
@@ -13,17 +15,17 @@ interface RateLimitEntry {
 }
 
 export class BotOrchestrator {
-  private wsClient: WSClient;
+  private transport: Transport;
   private store: ConversationStore;
   private adapter: AnthropicApiAdapter;
   private config: BotConfig;
   private logger: Logger;
   private rateLimits = new Map<string, RateLimitEntry>();
 
-  constructor(config: BotConfig) {
+  constructor(config: BotConfig, transport?: Transport) {
     this.config = config;
     this.logger = config.logger ?? new DefaultLogger('BotOrchestrator');
-    this.wsClient = new WSClient({
+    this.transport = transport ?? new WsTransport({
       botId: config.botId,
       secret: config.secret,
       ...(config.wsUrl && { wsUrl: config.wsUrl }),
@@ -35,15 +37,15 @@ export class BotOrchestrator {
   }
 
   start(): void {
-    this.wsClient.connect();
+    this.transport.connect();
   }
 
   stop(): void {
-    this.wsClient.disconnect();
+    this.transport.stop();
   }
 
   private setupEventHandlers(): void {
-    this.wsClient.on('message.text', async (frame: WsFrame<TextMessage>) => {
+    this.transport.on('message.text', async (frame: WsFrame<TextMessage>) => {
       try {
         await this.handleTextMessage(frame);
       } catch (err: any) {
@@ -51,8 +53,8 @@ export class BotOrchestrator {
       }
     });
 
-    this.wsClient.on('error', (err) => {
-      console.error('WSClient error:', err.message);
+    this.transport.on('error', (err) => {
+      console.error('Transport error:', err.message);
     });
   }
 
@@ -103,7 +105,7 @@ export class BotOrchestrator {
     const streamId = generateReqId('stream');
     for (let i = 0; i < chunks.length; i++) {
       const finish = i === chunks.length - 1;
-      await this.wsClient.replyStream(frame, streamId, chunks[i], finish);
+      await this.transport.sendStream(frame, streamId, chunks[i], finish);
     }
   }
 
@@ -170,6 +172,6 @@ export class BotOrchestrator {
   }
 
   private async sendText(frame: WsFrame<TextMessage>, text: string): Promise<void> {
-    await this.wsClient.replyStream(frame, generateReqId('stream'), text, true);
+    await this.transport.sendText(frame, text);
   }
 }
