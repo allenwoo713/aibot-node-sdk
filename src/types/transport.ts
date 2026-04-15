@@ -7,6 +7,8 @@ import type {
   VoiceMessage,
   FileMessage,
   VideoMessage,
+} from './message';
+import type {
   EventMessage,
   EnterChatEvent,
   TemplateCardEventData,
