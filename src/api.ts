@@ -6,6 +6,9 @@ import type { Logger } from './types';
  * 仅负责文件下载等 HTTP 辅助功能，消息收发均走 WebSocket 通道
  */
 export class WeComApiClient {
+  private static readonly GET_TOKEN_URL = 'https://qyapi.weixin.qq.com/cgi-bin/gettoken';
+  private static readonly SEND_MSG_URL = 'https://qyapi.weixin.qq.com/cgi-bin/message/send';
+
   private httpClient: AxiosInstance;
   private logger: Logger;
 
@@ -18,6 +21,33 @@ export class WeComApiClient {
         'Content-Type': 'application/json',
       },
     });
+  }
+
+  async getAccessToken(corpid: string, corpsecret: string): Promise<{ access_token: string; expires_in: number }> {
+    const { data } = await this.httpClient.get(WeComApiClient.GET_TOKEN_URL, {
+      params: { corpid, corpsecret },
+    });
+    if (data.errcode !== 0) {
+      throw new Error(`gettoken failed: ${data.errmsg} (${data.errcode})`);
+    }
+    return { access_token: data.access_token, expires_in: data.expires_in };
+  }
+
+  async sendTextMessage(token: string, agentid: string, touser: string, chatid: string | undefined, content: string): Promise<void> {
+    const payload: any = {
+      msgtype: 'text',
+      agentid,
+      text: { content },
+      safe: 0,
+    };
+    if (touser) payload.touser = touser;
+    if (chatid) payload.chatid = chatid;
+    const { data } = await this.httpClient.post(WeComApiClient.SEND_MSG_URL, payload, {
+      params: { access_token: token },
+    });
+    if (data.errcode !== 0) {
+      throw new Error(`send failed: ${data.errmsg} (${data.errcode})`);
+    }
   }
 
   /**
