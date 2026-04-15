@@ -12,7 +12,7 @@ export interface HttpTransportOptions {
   logger?: Logger;
 }
 
-class TokenCache {
+export class TokenCache {
   private token: string | null = null;
   private expiresAt = 0;
   private refreshPromise: Promise<string> | null = null;
