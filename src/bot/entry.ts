@@ -19,7 +19,7 @@ const httpTransport = new HttpTransport({
 });
 
 const transport = new FallbackTransport(wsTransport, httpTransport, config.logger);
-const bot = new BotOrchestrator(config, transport);
+export const bot = new BotOrchestrator(config, transport);
 
 bot.start();
 
