@@ -9,6 +9,8 @@ export interface BotConfig {
   secret: string;
   /** Anthropic API key */
   anthropicApiKey: string;
+  /** Anthropic-compatible base URL (optional) */
+  anthropicBaseUrl?: string;
   /** Anthropic model name */
   anthropicModel: string;
   /** WebSocket URL (optional) */
@@ -65,6 +67,7 @@ export function loadConfig(): BotConfig {
     botId: getEnv('BOT_ID'),
     secret: getEnv('SECRET'),
     anthropicApiKey: getEnv('ANTHROPIC_API_KEY'),
+    anthropicBaseUrl: process.env.ANTHROPIC_BASE_URL || undefined,
     anthropicModel: getEnv('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022'),
     wsUrl: process.env.WS_URL || undefined,
     corpId: process.env.CORP_ID || getEnv('BOT_ID'),

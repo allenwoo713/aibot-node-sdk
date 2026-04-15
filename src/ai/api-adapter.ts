@@ -10,8 +10,8 @@ export class AnthropicApiAdapter implements AiBackend {
   private internalPrompt: string;
   private externalPrompt: string;
 
-  constructor(config: Pick<BotConfig, 'anthropicApiKey' | 'anthropicModel' | 'maxOutputTokens' | 'apiTimeoutMs' | 'internalSystemPrompt' | 'externalSystemPrompt'>) {
-    this.client = new Anthropic({ apiKey: config.anthropicApiKey });
+  constructor(config: Pick<BotConfig, 'anthropicApiKey' | 'anthropicBaseUrl' | 'anthropicModel' | 'maxOutputTokens' | 'apiTimeoutMs' | 'internalSystemPrompt' | 'externalSystemPrompt'>) {
+    this.client = new Anthropic({ apiKey: config.anthropicApiKey, baseURL: config.anthropicBaseUrl });
     this.model = config.anthropicModel;
     this.maxOutputTokens = config.maxOutputTokens;
     this.timeoutMs = config.apiTimeoutMs;
