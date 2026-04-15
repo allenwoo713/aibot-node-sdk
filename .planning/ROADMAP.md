@@ -49,7 +49,10 @@ Plan list:
   1. End-to-end tests demonstrate the bot handling a complete conversation flow using WebSocket transport
   2. End-to-end tests demonstrate the bot handling a complete conversation flow using HTTP callback transport
   3. The same `BotOrchestrator` configuration can operate with either transport without code changes
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plan list:
+- [ ] `03-01-PLAN.md` — Add E2E tests for WebSocket multi-turn, HTTP callback, entry smoke, and fallback transport
 
 ## Progress
 
