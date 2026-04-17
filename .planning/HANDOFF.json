@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-04-17T06:52:10.793Z",
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "milestone_complete",
+  "completed_tasks": [
+    {"id": 1, "name": "Phase 01: Async Persistence Refactor", "status": "done", "commit": "4be8ed4"},
+    {"id": 2, "name": "Phase 02: HTTP Fallback Transport", "status": "done", "commit": "23203f9"},
+    {"id": 3, "name": "Phase 03: Integration & E2E Validation", "status": "done", "commit": "1add209"},
+    {"id": 4, "name": "Milestone v1.0 Audit", "status": "done", "commit": null},
+    {"id": 5, "name": "Milestone v1.0 Archive & Tag", "status": "done", "commit": "b922439"}
+  ],
+  "remaining_tasks": [],
+  "blockers": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "WebSocket long-connection is the primary transport for WeCom AI Bot", "rationale": "Does not require public callback URL/domain registration; callback URL blocker only affects HTTP callback mode", "phase": "03"},
+    {"decision": "Media upload support deferred to next milestone", "rationale": "v1.0 scope was async persistence + HTTP fallback; media upload is the next natural feature gap vs Hermes reference", "phase": null}
+  ],
+  "uncommitted_files": [".gitignore", "scripts/"],
+  "next_action": "Start next milestone with /gsd-new-milestone, or ship v1.0 if ready for release",
+  "context_notes": "v1.0 is fully complete and archived. All 3 phases done, 61/61 tests pass, live WebSocket UAT verified against real WeCom gateway. Git tag v1.0 exists. Debug scripts are in scripts/ (ignored by .gitignore per project convention)."
+}
