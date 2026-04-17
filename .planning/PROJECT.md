@@ -23,15 +23,32 @@ Developers can integrate a production-ready AI bot into WeCom with minimal setup
 - Full test coverage: 61/61 tests passing, including E2E for WebSocket multi-turn, HTTP callback, fallback routing, and entry smoke
 - Live WebSocket UAT verified against the official WeCom gateway (`wss://openws.work.weixin.qq.com`)
 
-## Next Milestone Goals
+## Current Milestone: v1.1 AI Validation & Persistent Storage
 
-_TBD — start with `/gsd-new-milestone`._
+**Goal:** Strengthen AI call reliability with validation, retries, and cost guards, while replacing JSON-based conversation persistence with a robust database-backed store.
 
-Potential directions:
-- Media upload support (image/file/video via `aibot_upload_media_*`)
-- Inbound attachment download and multi-modal AI context
-- Structured logging / metrics pipeline
-- Token-budget / cost guard
+**Target features:**
+- AI API call validation (response schema checks, error classification, retry policies, token/cost guards)
+- Conversation persistent storage research + implementation (JSON vs SQLite+WAL vs MongoDB)
+- Backward-compatible `ConversationStore` API
+- Maintained or improved test coverage
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
 
@@ -64,4 +81,4 @@ Potential directions:
 </details>
 
 ---
-*Last updated: 2026-04-17 after v1.0 milestone completion*
+*Last updated: 2026-04-17 after starting v1.1 milestone*

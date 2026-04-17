@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: Milestone complete
-last_updated: "2026-04-17T06:49:51.104Z"
+milestone: v1.1
+milestone_name: AI Validation & Persistent Storage
+status: Defining requirements
+last_updated: "2026-04-17T07:10:00.000Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -18,28 +18,26 @@ progress:
 
 **Project**: aibot-node-sdk  
 **Core Value**: Developers can integrate a production-ready AI bot into WeCom with minimal setup, while the SDK provides reliable real-time messaging and extensible architecture.  
-**Current Focus**: Replace synchronous persistence with async I/O and add HTTP fallback transport for WeCom messaging.
+**Current Focus**: Add AI call validation and replace JSON persistence with a robust database-backed store.
 
 ## Current Position
 
-Phase: 03
-Plan: 01
-**Phase**: 3  
-**Plan**: —  
-**Status**: complete  
-**Progress**: 100%  
+Phase: Not started (defining requirements)  
+Plan: —  
+**Status**: Defining requirements  
+**Progress**: 0%  
 
 ```
-[####################] 100%
+[                    ] 0%
 ```
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 3/3 |
-| Requirements validated | 16/16 |
-| Tests passing | 61/61 |
+| Phases completed | 0/0 |
+| Requirements validated | 0/0 |
+| Tests passing | — |
 | Blockers | 0 |
 
 ## Accumulated Context
@@ -52,9 +50,9 @@ Plan: 01
 
 ### TODOs
 
-- [x] Phase 1: Async Persistence Refactor
-- [x] Phase 2: HTTP Fallback Transport
-- [x] Phase 3: Integration & E2E Validation
+- [ ] AI API validation design & implementation
+- [ ] Persistent storage research (JSON vs SQLite+WAL vs MongoDB)
+- [ ] Persistent storage implementation with backward compatibility
 
 ### Blockers
 
@@ -63,5 +61,5 @@ None.
 ## Session Continuity
 
 **Last updated**: 2026-04-17  
-**Last action**: Phase 03 completed (E2E tests + real WebSocket UAT with live WeCom bot)  
-**Next action**: `/gsd-complete-milestone` or `/gsd-ship`
+**Last action**: Milestone v1.1 started  
+**Next action**: Domain research then requirements definition
