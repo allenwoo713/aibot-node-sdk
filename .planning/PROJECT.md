@@ -13,9 +13,32 @@ Developers can integrate a production-ready AI bot into WeCom with minimal setup
 - Node.js developers building WeCom bots
 - Teams needing AI-assisted customer support or internal assistants inside WeCom
 
-## Requirements
+## Current State
 
-### Validated
+**Milestone v1.0 shipped.**
+
+- `ConversationStore` uses fully async I/O with a write queue and lazy initialization
+- `Transport` abstraction supports WebSocket primary + HTTP fallback seamlessly
+- `BotOrchestrator` is transport-agnostic and backward-compatible
+- Full test coverage: 61/61 tests passing, including E2E for WebSocket multi-turn, HTTP callback, fallback routing, and entry smoke
+- Live WebSocket UAT verified against the official WeCom gateway (`wss://openws.work.weixin.qq.com`)
+
+## Next Milestone Goals
+
+_TBD — start with `/gsd-new-milestone`._
+
+Potential directions:
+- Media upload support (image/file/video via `aibot_upload_media_*`)
+- Inbound attachment download and multi-modal AI context
+- Structured logging / metrics pipeline
+- Token-budget / cost guard
+
+---
+
+<details>
+<summary>Archived v1.0 Content</summary>
+
+## Validated (v1.0)
 
 - WebSocket connection management with auto-reconnect and auth — existing
 - Typed message framing and event dispatch (`MessageHandler`) — existing
@@ -30,18 +53,7 @@ Developers can integrate a production-ready AI bot into WeCom with minimal setup
 - Ensure backward compatibility for existing `ConversationStore` API consumers — Phase 01
 - Maintain or improve test coverage for persistence and transport layers — Phase 03
 
-### Active
-
-_None._
-
-### Out of Scope
-
-- Multi-provider AI failover — requires broader adapter redesign, not in this milestone
-- Structured logging / metrics pipeline — known gap but deferred to keep milestone focused
-- Token-budget / cost guard — complex billing logic, deferred
-- Graceful shutdown with in-flight draining — related but not required for these two goals
-
-## Key Decisions
+## Key Decisions (v1.0)
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
@@ -49,22 +61,7 @@ _None._
 | HTTP fallback uses WeCom official push + callback APIs | Aligns with WeCom platform conventions | Completed in Phase 02 — real HTTP server and crypto signatures validated in E2E tests |
 | Keep `ws` as primary transport, HTTP as fallback | WebSocket is the optimized path; HTTP fills availability gaps | Completed in Phase 02 — FallbackTransport routes seamlessly between transports |
 
-## Evolution
-
-This document evolves at phase transitions and milestone boundaries.
-
-**After each phase transition** (via `/gsd-transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
-
-**After each milestone** (via `/gsd-complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
+</details>
 
 ---
-*Last updated: 2026-04-15 after Phase 03 completion*
+*Last updated: 2026-04-17 after v1.0 milestone completion*
