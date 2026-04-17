@@ -1,373 +1,381 @@
-# Architecture Research: Async Persistence and HTTP Fallback
+# Architecture Patterns: AI Validation & Persistent Storage Integration
 
-**Domain:** Event-driven messaging SDK (WeCom AI bot)
-**Researched:** 2026-04-14
+**Domain:** TypeScript Node.js SDK — WeCom AI bot with adapter-pattern architecture
+**Researched:** 2026-04-17
 **Confidence:** HIGH
 
-## Standard Architecture
+## Recommended Architecture
 
-### System Overview
-
-The existing SDK is an event-driven, layered architecture with WebSocket as the primary transport. The goal is to introduce two capabilities without breaking existing consumers:
-
-1. **Async persistence** — replace synchronous `fs` calls in `ConversationStore` with async I/O.
-2. **HTTP fallback transport** — receive and send messages via WeCom push/callback APIs when WebSocket is unavailable.
-
-The recommended architecture keeps WebSocket as the primary path and treats HTTP as a transparent fallback, unified at the message-frame layer.
+### System Overview (v1.1 Target)
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Consumer / Bot Layer                          │
-│  ┌─────────────────┐                                                │
-│  │ BotOrchestrator │◄───────────────────────────────────────────────┤
-│  └─────────────────┘                                                │
-├─────────────────────────────────────────────────────────────────────┤
-│                        SDK Public API Layer                          │
-│  ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐   │
-│  │    WSClient     │◄──│  MessageHandler │◄──│ TransportRouter │   │
-│  │   (existing)    │   │   (existing)    │   │    (new)        │   │
-│  └─────────────────┘   └─────────────────┘   └─────────────────┘   │
-├─────────────────────────────────────────────────────────────────────┤
-│                        Transport Abstraction Layer                   │
-│  ┌─────────────────────┐   ┌─────────────────────────────────────┐  │
-│  │ WsConnectionManager │   │         HttpTransportManager        │  │
-│  │     (existing)      │   │              (new)                  │  │
-│  └─────────────────────┘   └─────────────────────────────────────┘  │
-├─────────────────────────────────────────────────────────────────────┤
-│                        Persistence Layer                             │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │              ConversationStore (async I/O)                  │    │
-│  │         ┌──────────────┐         ┌──────────────┐           │    │
-│  │         │  In-Memory   │◄───────►│  Async File  │           │    │
-│  │         │    Cache     │         │    Store     │           │    │
-│  │         └──────────────┘         └──────────────┘           │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           BotOrchestrator                                    │
+│  ┌─────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐ │
+│  │  RateLimiter    │    │  ConversationStore  │    │  ValidatingAdapter  │ │
+│  │   (existing)    │◄──►│   (pluggable impl)  │◄──►│   (new wrapper)     │ │
+│  └─────────────────┘    └─────────────────────┘    └─────────────────────┘ │
+│           │                        │                          │              │
+│           ▼                        ▼                          ▼              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │                      Transport (WS / HTTP / Fallback)                    ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              AI Backend Layer                                │
+│  ┌─────────────────────────────┐        ┌─────────────────────────────────┐ │
+│  │   ValidatingAiBackend       │        │      AnthropicApiAdapter        │ │
+│  │   (decorator / wrapper)     │───────►│      (existing adapter)         │ │
+│  │                             │        │                                 │ │
+│  │  • Response schema checks   │        │  (future: OpenAI, Gemini, etc.) │ │
+│  │  • Error classification     │        └─────────────────────────────────┘ │
+│  │  • Retry policies           │                                             │
+│  │  • Token / cost guards      │                                             │
+│  └─────────────────────────────┘                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Persistence Backend Layer                            │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────────────┐ │
+│  │  JsonFileStore   │  │  SqliteStore     │  │  MongoStore (future)       │ │
+│  │  (existing)      │  │  (new)           │  │  (future)                  │ │
+│  └──────────────────┘  └──────────────────┘  └────────────────────────────┘ │
+│         ▲                    ▲                      ▲                       │
+│         └────────────────────┴──────────────────────┘                       │
+│                              │                                              │
+│                    ConversationStore (interface preserved)                   │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Component Responsibilities
+### Component Boundaries
 
-| Component | Responsibility | Notes |
-|-----------|----------------|-------|
-| `TransportRouter` (new) | Decide whether to use WebSocket or HTTP for a given send; route inbound HTTP callbacks into the same `MessageHandler` pipeline | Thin coordinator, no business logic |
-| `HttpTransportManager` (new) | Send messages via WeCom HTTP APIs; expose an Express/Fastify handler (or a generic `handleRequest(req, res)` function) for inbound push callbacks | Must validate WeCom signatures, decrypt payloads, and emit `WsFrame`-compatible objects |
-| `WsConnectionManager` (existing) | Maintain WebSocket lifecycle, auth, heartbeat, reply queues | Unchanged except for optional integration with `TransportRouter` |
-| `MessageHandler` (existing) | Parse frames and emit typed events on `WSClient` | Must accept frames from both WebSocket and HTTP paths |
-| `ConversationStore` (modified) | In-memory LRU/TTL cache with async JSON persistence | API surface becomes async; backward-compatible wrapper provided |
-| `BotOrchestrator` (existing) | Listen to events, call AI adapter, manage replies | Uses `TransportRouter` instead of calling `WSClient` reply methods directly |
+| Component | Responsibility | Communicates With |
+|-----------|---------------|-------------------|
+| `BotOrchestrator` | Routes messages, applies rate limits, delegates to store and AI | `Transport`, `ConversationStore`, `AiBackend` |
+| `ValidatingAiBackend` | Decorates any `AiBackend` with validation, retries, token guards | `BotOrchestrator` (consumer), `AiBackend` (delegate) |
+| `AnthropicApiAdapter` | Vendor-specific API calls (unchanged) | `ValidatingAiBackend` |
+| `ConversationStore` | Public API facade: `get`, `append`, `clear`, `buildMessages` | `BotOrchestrator`, persistence backends |
+| `JsonFileStore` | JSON file persistence (existing logic extracted) | `ConversationStore` |
+| `SqliteStore` | SQLite+WAL persistence with async I/O | `ConversationStore` |
 
-## Recommended Project Structure
+---
 
-```
-src/
-├── transport/              # NEW: Transport abstraction
-│   ├── index.ts            # TransportRouter + unified types
-│   ├── ws/                 # (moved from src/ws.ts in future)
-│   │   └── connection-manager.ts
-│   └── http/               # NEW: HTTP fallback
-│       ├── manager.ts      # HttpTransportManager
-│       ├── webhook-handler.ts  # inbound push handler
-│       └── signature.ts    # WeCom signature verification
-├── client.ts               # WSClient (minimal changes)
-├── message-handler.ts      # unchanged
-├── memory.ts               # async ConversationStore
-├── memory-sync.ts          # NEW: thin sync wrapper for backward compat
-├── bot/
-│   ├── index.ts            # BotOrchestrator (uses TransportRouter)
-│   └── entry.ts            # service entry (wires HTTP server if configured)
-├── ai/                     # unchanged
-├── types/                  # add transport types
-├── api.ts                  # WeComApiClient (add HTTP message send methods)
-└── index.ts                # exports
-```
+## Patterns to Follow
 
-### Structure Rationale
+### Pattern 1: Decorator Wrapper for AI Validation
 
-- **`transport/`:** Isolates transport concerns so WebSocket and HTTP can evolve independently. The router is the single point where fallback logic lives.
-- **`memory.ts` / `memory-sync.ts`:** Keeps the async implementation clean while providing a deprecated sync wrapper for existing consumers.
-- **`api.ts` expansion:** `WeComApiClient` already handles HTTP file downloads; adding message-send methods keeps all WeCom HTTP API calls in one place.
-- **`bot/index.ts`:** The orchestrator should not know whether a reply went out over WebSocket or HTTP. It delegates to the transport abstraction.
+**What:** Implement `AiBackend` in a `ValidatingAiBackend` class that wraps another `AiBackend`. The orchestrator talks to the wrapper; the wrapper delegates to the real adapter after/before running guards.
 
-## Architectural Patterns
-
-### Pattern 1: Transport Abstraction with Transparent Fallback
-
-**What:** A `TransportRouter` exposes the same reply/send API regardless of whether the underlying transport is WebSocket or HTTP. It prefers WebSocket when connected and automatically falls back to HTTP when the socket is down or a send fails.
-
-**When to use:** When the primary transport is real-time but availability must be guaranteed.
+**When to use:** When cross-cutting concerns (validation, retries, cost guards) must apply uniformly regardless of which vendor adapter is underneath.
 
 **Trade-offs:**
-- Pros: Consumers write one code path; fallback is automatic.
-- Cons: HTTP and WebSocket have different latency and ack semantics; the router must surface delivery status clearly (e.g., `delivered: true/false`, `transport: 'ws' | 'http'`).
+- Pro: Zero changes to `AnthropicApiAdapter` or `BotOrchestrator` call sites.
+- Pro: Easy to unit-test validation logic in isolation.
+- Con: Slightly deeper call stack; avoid over-nesting.
 
 **Example:**
 ```typescript
-export interface TransportSendResult {
-  transport: 'ws' | 'http';
-  delivered: boolean;
-  ackFrame?: WsFrame;        // WebSocket ack
-  httpResponse?: unknown;    // HTTP API response body
+// src/ai/validating-adapter.ts
+import type { AiBackend, ChatOptions, ChatResult } from './adapter';
+
+export interface ValidationConfig {
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
+  maxCostPerCallUsd?: number;
+  allowedContentRegex?: RegExp;
+  retryPolicy: {
+    maxAttempts: number;
+    backoffMs: number;
+    retryableErrors: string[];
+  };
 }
 
-export class TransportRouter {
+export class ValidatingAiBackend implements AiBackend {
   constructor(
-    private ws: WsConnectionManager,
-    private http: HttpTransportManager,
+    private delegate: AiBackend,
+    private config: ValidationConfig,
+    private logger?: Logger,
   ) {}
 
-  async sendReply(reqId: string, body: unknown): Promise<TransportSendResult> {
-    if (this.ws.isConnected) {
+  async chat(options: ChatOptions): Promise<ChatResult> {
+    this.validateRequest(options);
+
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= this.config.retryPolicy.maxAttempts; attempt++) {
       try {
-        const ack = await this.ws.sendReply(reqId, body);
-        return { transport: 'ws', delivered: true, ackFrame: ack };
+        const result = await this.delegate.chat(options);
+        return this.validateResponse(result);
       } catch (err) {
-        this.logger.warn('WS send failed, falling back to HTTP', err);
+        lastError = err;
+        if (!this.isRetryable(err) || attempt === this.config.retryPolicy.maxAttempts) {
+          break;
+        }
+        await delay(this.config.retryPolicy.backoffMs * (attempt + 1));
       }
     }
-    const httpResult = await this.http.sendReply(reqId, body);
-    return { transport: 'http', delivered: httpResult.errcode === 0, httpResponse: httpResult };
+
+    this.logger?.error('AI call failed after retries', lastError);
+    return { content: '服务暂时繁忙，请稍后再试。', error: true };
+  }
+
+  private validateRequest(options: ChatOptions): void {
+    // Token estimation, cost guards, schema pre-checks
+  }
+
+  private validateResponse(result: ChatResult): ChatResult {
+    // Schema checks, content filtering, usage validation
+    return result;
+  }
+
+  private isRetryable(err: unknown): boolean {
+    // Classify errors (timeout, 5xx, 429, etc.)
+    return true;
   }
 }
 ```
 
-### Pattern 2: Async Persistence with In-Memory Cache
+### Pattern 2: Strategy/Adapter Pattern for Persistence Backends
 
-**What:** `ConversationStore` keeps its existing in-memory `Map` for hot data but performs all disk I/O asynchronously. Reads are always from memory (fast); writes are debounced or queued to disk.
+**What:** Extract the file I/O logic from `ConversationStore` into a `PersistenceBackend` interface. `ConversationStore` becomes a memory-backed facade that delegates load/save/eviction policy to a swappable backend.
 
-**When to use:** When you need to eliminate blocking I/O without adding a full database dependency.
+**When to use:** When the same in-memory behavior (TTL, LRU, sliding window) must survive across different storage engines.
 
 **Trade-offs:**
-- Pros: Simple, no new infrastructure; preserves existing TTL/LRU behavior.
-- Cons: Crash before flush loses the last few writes; not horizontally scalable.
+- Pro: Existing consumers of `ConversationStore` see no breaking changes.
+- Pro: Backends can be tested independently.
+- Con: Slightly more abstraction; keep interface minimal to avoid leakage.
 
 **Example:**
 ```typescript
+// src/memory/backend.ts
+export interface PersistenceBackend {
+  load(): Promise<Record<string, ConversationRecord>>;
+  save(data: Record<string, ConversationRecord>): Promise<void>;
+}
+
+// src/memory/json-file-backend.ts
+export class JsonFileBackend implements PersistenceBackend {
+  constructor(private path: string, private logger?: Logger) {}
+  async load() { /* existing load() logic */ }
+  async save(data) { /* existing doSave() logic */ }
+}
+
+// src/memory/sqlite-backend.ts
+export class SqliteBackend implements PersistenceBackend {
+  constructor(private dbPath: string, private logger?: Logger) {}
+  async load() { /* SELECT all active records */ }
+  async save(data) { /* UPSERT in WAL mode */ }
+}
+```
+
+### Pattern 3: Facade Preservation for Backward Compatibility
+
+**What:** Keep `ConversationStore`'s public method signatures identical. Only its constructor gains an optional `backend` parameter; if omitted, default to `JsonFileBackend` using the existing `persistencePath` config.
+
+**When to use:** When the class is consumed by external SDK users and by internal orchestrator code.
+
+**Trade-offs:**
+- Pro: No migration needed for existing deployments.
+- Pro: Tests using `ConversationStore` continue to pass.
+- Con: Constructor signature grows slightly; use an options object to keep it clean.
+
+**Example:**
+```typescript
+// src/memory.ts (backward-compatible constructor)
+export interface ConversationStoreOptions {
+  conversationTtlMs: number;
+  maxConversations: number;
+  maxHistoryMessages: number;
+  persistencePath: string;
+  logger?: Logger;
+  backend?: PersistenceBackend;
+}
+
 export class ConversationStore {
-  private store = new Map<string, ConversationRecord>();
-  private savePromise: Promise<void> | null = null;
-  private pendingSave = false;
-
-  async append(conversationId: string, message: Omit<HistoryMessage, 'timestamp'>): Promise<void> {
-    // ... update in-memory store ...
-    await this.scheduleSave();
-  }
-
-  private async scheduleSave(): Promise<void> {
-    if (this.savePromise) {
-      this.pendingSave = true;
-      return;
-    }
-    this.savePromise = this.doSave();
-    await this.savePromise;
-    this.savePromise = null;
-    if (this.pendingSave) {
-      this.pendingSave = false;
-      await this.scheduleSave();
-    }
-  }
-
-  private async doSave(): Promise<void> {
-    const data = Object.fromEntries(this.store.entries());
-    await fs.promises.writeFile(this.config.persistencePath, JSON.stringify(data), 'utf-8');
+  constructor(options: ConversationStoreOptions) {
+    this.config = options;
+    this.logger = options.logger;
+    this.backend = options.backend ?? new JsonFileBackend(options.persistencePath, options.logger);
+    // ... rest unchanged
   }
 }
 ```
 
-### Pattern 3: Unified Inbound Frame Pipeline
-
-**What:** Both WebSocket and HTTP inbound messages are normalized into `WsFrame` objects and fed through `MessageHandler.handleFrame`. This guarantees that `BotOrchestrator` sees the same events regardless of transport.
-
-**When to use:** When adding a second inbound channel to an existing event-driven system.
-
-**Trade-offs:**
-- Pros: Zero changes to event consumers; single place to add logging/metrics later.
-- Cons: HTTP callbacks may carry slightly different metadata (e.g., no `req_id` in some WeCom push modes), requiring careful normalization.
-
-**Example:**
-```typescript
-// In HttpTransportManager
-async handleWebhook(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const payload = await this.verifyAndDecrypt(req);
-  const frame: WsFrame = {
-    cmd: WsCmd.CALLBACK,
-    headers: { req_id: payload.msgid || generateReqId('http') },
-    body: payload,
-  };
-  this.onFrame?.(frame); // routed to MessageHandler
-  res.end('success');
-}
-```
+---
 
 ## Data Flow
 
-### Inbound Message Flow (WebSocket Primary)
+### AI Request Flow (with Validation Layer)
 
 ```
-WeCom Server
-    ↓ (WebSocket frame)
-WsConnectionManager
-    ↓ (frame)
-TransportRouter
-    ↓ (frame)
-MessageHandler.handleFrame
-    ↓ (typed event)
-WSClient.emit('message.text')
-    ↓
-BotOrchestrator
-    ↓
-ConversationStore (async load/append)
-    ↓
-AnthropicApiAdapter
-    ↓
-TransportRouter.sendReply
-    ↓
-WsConnectionManager.sendReply
-    ↓
-WeCom Server
+[WeCom message]
+      │
+      ▼
+[BotOrchestrator.handleTextMessage]
+      │
+      ▼
+[Rate limit check] ──► (reject if exceeded)
+      │
+      ▼
+[ConversationStore.append] ──► [PersistenceBackend.save]
+      │
+      ▼
+[ConversationStore.buildMessages]
+      │
+      ▼
+[ValidatingAiBackend.chat]
+      ├──► [validateRequest] (tokens, cost guards)
+      │
+      ├──► [retry loop]
+      │         │
+      │         ▼
+      │    [AnthropicApiAdapter.chat]
+      │         │
+      │         ▼
+      │    [Anthropic SDK]
+      │         │
+      │         ▼
+      ├──► [validateResponse] (schema, usage)
+      │
+      ▼
+[Return ChatResult to orchestrator]
+      │
+      ▼
+[ConversationStore.append assistant reply]
+      │
+      ▼
+[Transport.sendStream / sendText]
 ```
 
-### Inbound Message Flow (HTTP Fallback)
+### Persistence Save Flow (pluggable backend)
 
 ```
-WeCom Server
-    ↓ (HTTP POST callback)
-HttpTransportManager.handleWebhook
-    ↓ (verify signature, decrypt, normalize to WsFrame)
-TransportRouter
-    ↓ (frame)
-MessageHandler.handleFrame
-    ↓ (typed event)
-WSClient.emit('message.text')
-    ↓
-BotOrchestrator
-    ↓
-ConversationStore (async load/append)
-    ↓
-AnthropicApiAdapter
-    ↓
-TransportRouter.sendReply
-    ↓ (detects WS down)
-HttpTransportManager.sendReply
-    ↓ (WeCom HTTP API)
-WeCom Server
+[BotOrchestrator] calls store.append()
+      │
+      ▼
+[ConversationStore] updates in-memory Map
+      │
+      ├──► [evictIfExpired] ──► [evictLru]
+      │
+      ▼
+[PersistenceBackend.save]
+      │
+      ├──► [JsonFileBackend] ──► fs.writeFile + atomic rename
+      │
+      ├──► [SqliteBackend] ──► sqlite INSERT/UPDATE in WAL mode
+      │
+      └──► [MongoStore] ──► collection replaceOne (future)
 ```
 
-### Outbound Send Flow (Active Push)
+### Key Data Flows
 
-```
-BotOrchestrator (or consumer)
-    ↓
-TransportRouter.sendMessage(chatid, body)
-    ├─► WebSocket connected? ──► WsConnectionManager.sendMessage ──► WS
-    └─► else ─────────────────► HttpTransportManager.sendMessage ──► HTTP API
-```
+1. **Validation Decorator Flow:** `BotOrchestrator` keeps a reference to `AiBackend`. At construction time, inject a `ValidatingAiBackend` that wraps the real adapter. The orchestrator does not know whether it is talking to a raw adapter or a decorated one.
 
-### Persistence Flow
+2. **Pluggable Persistence Flow:** `ConversationStore` always maintains an in-memory `Map` for fast reads. Writes are pushed asynchronously to the configured `PersistenceBackend`. On `init()`, the backend `load()` hydrates the Map. On `save()`, the entire Map is serialized by the backend.
 
-```
-BotOrchestrator
-    ↓
-ConversationStore.append / get / buildMessages
-    ├─► immediate in-memory Map update
-    └─► async write to JSON file (queued, non-blocking)
-```
+---
 
-## Scaling Considerations
+## Scalability Considerations
 
 | Scale | Architecture Adjustments |
 |-------|--------------------------|
-| Single Node (current) | Async file I/O + optional HTTP webhook endpoint on the same process. No external dependencies. |
-| Multi-Node / Container | HTTP webhook mode becomes required because WebSocket is single-connection. `ConversationStore` JSON file must move to a shared volume or be replaced with Redis/database. |
-| High Throughput | Replace JSON file persistence with a proper database; add a message queue between HTTP webhook receiver and bot handler. |
+| 1 bot, 1K convos | `JsonFileBackend` is fine. `ValidatingAiBackend` adds negligible overhead. |
+| 1 bot, 10K+ convos, frequent restarts | Switch to `SqliteBackend` (WAL) to avoid full-file rewrite churn and corruption risk. |
+| Multi-instance / horizontal scale | `ConversationStore` must be replaced or backed by a shared DB (Mongo/Postgres). The `PersistenceBackend` interface makes this swap possible without touching `BotOrchestrator`. |
 
 ### Scaling Priorities
 
-1. **First bottleneck:** Blocking `fs.writeFileSync` in `ConversationStore` under concurrent conversations. **Fix:** Async I/O with write coalescing (the immediate goal).
-2. **Second bottleneck:** Single WebSocket connection limits horizontal scaling. **Fix:** HTTP fallback webhook mode allows multiple container replicas to receive messages.
+1. **First bottleneck:** JSON file rewrite latency at high save frequency. Mitigation: `SqliteBackend` with WAL mode and batched writes.
+2. **Second bottleneck:** Single-process memory cap for `Map`-backed store. Mitigation: Cap `maxConversations` aggressively, or move to a DB-backed query model where `get()` reads from SQLite instead of memory.
 
-## Anti-Patterns
+---
 
-### Anti-Pattern 1: Dual Event Streams
+## Anti-Patterns to Avoid
 
-**What people do:** Create a separate event emitter or handler path for HTTP messages, duplicating bot logic.
-**Why it's wrong:** Business logic drifts between channels; bugs fixed in one path are missed in the other.
-**Do this instead:** Normalize HTTP payloads into `WsFrame` and route them through the existing `MessageHandler`.
+### Anti-Pattern 1: Leaking Backend Details into the Public API
 
-### Anti-Pattern 2: Synchronous Fallback Detection
+**What people do:** Add SQLite-specific methods like `runMigration()` or `vacuum()` directly on `ConversationStore`.
 
-**What people do:** Check `ws.isConnected` synchronously, then block while opening an HTTP connection before returning.
-**Why it's wrong:** Wastes time if the WS send is about to fail; better to attempt WS send and catch the failure.
-**Do this instead:** Attempt WebSocket send first; catch and fallback to HTTP.
+**Why it's wrong:** Breaks the abstraction. Existing consumers and tests become coupled to SQLite.
 
-### Anti-Pattern 3: Leaking Transport Details to BotOrchestrator
+**Do this instead:** Expose backend-specific operations through the `PersistenceBackend` interface or a dedicated backend manager. `ConversationStore` stays agnostic.
 
-**What people do:** Bot logic branches on `if (transport === 'http')` to change reply behavior.
-**Why it's wrong:** Violates abstraction; makes the bot harder to test and evolve.
-**Do this instead:** `BotOrchestrator` should only interact with `TransportRouter`. Transport-specific quirks (e.g., HTTP lacks streaming) are handled inside the router or HTTP manager.
+### Anti-Pattern 2: Validating Inside the Vendor Adapter
 
-### Anti-Pattern 4: Fire-and-Forget Persistence Without Error Handling
+**What people do:** Modify `AnthropicApiAdapter.chat()` to include retry loops, schema checks, and cost guards.
 
-**What people do:** Make `save()` async but never `await` it, silently losing write errors.
-**Why it's wrong:** Disk-full or permission errors go unnoticed; state diverges from expectations.
-**Do this instead:** `await` or `.catch()` async saves, log errors, and optionally surface them to the caller or a health-check endpoint.
+**Why it's wrong:** Every future adapter (OpenAI, Gemini, local LLM) would need to duplicate validation logic. `BotOrchestrator` would also need to know which adapter is in use.
+
+**Do this instead:** Keep vendor adapters thin and focused on HTTP/API mapping. Wrap them in `ValidatingAiBackend` so validation is adapter-agnostic.
+
+### Anti-Pattern 3: Synchronous Persistence in the Hot Path
+
+**What people do:** Call `fs.writeFileSync` or `db.exec('COMMIT')` directly inside `append()` without a queue.
+
+**Why it's wrong:** Blocks the event loop, causing backpressure on the WebSocket message stream and violating the v1.0 async-I/O win.
+
+**Do this instead:** Keep the `saveQueue` pattern. `ConversationStore.save()` chains onto a promise queue; the backend's `save()` is always async.
+
+---
 
 ## Integration Points
 
-### External Services
+### New Components vs Modified Components
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| WeCom WebSocket | `ws` library, frame-based protocol | Primary transport; requires auth frame and heartbeat |
-| WeCom HTTP Push API | Inbound POST webhook | Must verify SHA1 signature and decrypt AES payload |
-| WeCom HTTP Message API | Outbound POST (e.g., `/cgi-bin/message/send`) | Used when WebSocket is unavailable; requires access token |
-| Anthropic Messages API | HTTP via `@anthropic-ai/sdk` | Unchanged |
+| New / Modified | File | Change |
+|----------------|------|--------|
+| **New** | `src/ai/validating-adapter.ts` | `ValidatingAiBackend` implements `AiBackend`, wraps delegate |
+| **New** | `src/ai/validation-config.ts` | Types and defaults for validation/retry policies |
+| **New** | `src/memory/backend.ts` | `PersistenceBackend` interface |
+| **New** | `src/memory/json-file-backend.ts` | Extracted existing JSON persistence logic |
+| **New** | `src/memory/sqlite-backend.ts` | SQLite+WAL implementation |
+| **Modified** | `src/memory.ts` | Add `backend` option, delegate load/save to backend |
+| **Modified** | `src/bot/index.ts` | Wire `ValidatingAiBackend` around `AnthropicApiAdapter` |
+| **Modified** | `src/config/index.ts` | Add optional validation and SQLite config keys |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| `TransportRouter` ↔ `WsConnectionManager` | Direct method calls | Router checks `isConnected` and delegates `sendReply` |
-| `TransportRouter` ↔ `HttpTransportManager` | Direct method calls | HTTP manager handles token refresh and retry |
-| `MessageHandler` ↔ `TransportRouter` | Callback (`onFrame`) | Decouples frame parsing from transport origin |
-| `BotOrchestrator` ↔ `ConversationStore` | Async method calls | Store API becomes `Promise`-based |
+| `BotOrchestrator` ↔ `AiBackend` | Direct method call via interface | Orchestrator stays agnostic to validation or vendor specifics |
+| `BotOrchestrator` ↔ `ConversationStore` | Direct method call | Public API unchanged; backend is an internal detail |
+| `ConversationStore` ↔ `PersistenceBackend` | Direct method call | Minimal interface (`load`, `save`) prevents leakage |
+| `ValidatingAiBackend` ↔ `AnthropicApiAdapter` | Direct method call | Decorator pattern; adapter has no knowledge of wrapper |
+
+---
 
 ## Suggested Build Order
 
-Based on dependencies between components:
+1. **Extract `PersistenceBackend` interface and `JsonFileBackend`**
+   - Keeps tests green.
+   - Proves backward compatibility.
 
-1. **Async `ConversationStore`**
-   - Convert `load`/`save`/`append`/`clear` to async.
-   - Add `memory-sync.ts` backward-compatible wrapper.
-   - Update `BotOrchestrator` to `await` store calls.
-   - Update tests.
+2. **Refactor `ConversationStore` to use `PersistenceBackend`**
+   - Default to `JsonFileBackend`.
+   - Run existing test suite.
 
-2. **`WeComApiClient` message-send methods**
-   - Add HTTP message send / media upload methods.
-   - Add access-token caching/refresh logic if not present.
-   - Unit test with mocked axios.
+3. **Implement `SqliteBackend`**
+   - Add `better-sqlite3` or `sqlite3` dependency.
+   - Write backend-specific unit tests.
 
-3. **`HttpTransportManager`**
-   - Implement outbound HTTP message sending.
-   - Implement inbound webhook handler with signature verification and AES decryption.
-   - Unit test both directions.
+4. **Implement `ValidatingAiBackend` shell**
+   - Implement `AiBackend`, pass through to delegate.
+   - Wire into `BotOrchestrator` behind a feature flag or config.
 
-4. **`TransportRouter`**
-   - Integrate `WsConnectionManager` and `HttpTransportManager`.
-   - Implement fallback logic and result normalization.
-   - Update `BotOrchestrator` to use the router for all replies.
+5. **Add validation rules (schema, retries, token guards)**
+   - Unit test each guard independently.
+   - Integrate with retry loop.
 
-5. **Integration / E2E tests**
-   - Test WebSocket primary path unchanged.
-   - Test HTTP fallback path end-to-end.
-   - Test mixed scenario (WS down mid-conversation).
+6. **E2E tests covering both backends and validation paths**
+   - Confirm `BotOrchestrator` behavior is identical across JSON and SQLite.
+
+---
 
 ## Sources
 
-- Existing codebase analysis (`src/client.ts`, `src/ws.ts`, `src/memory.ts`, `src/bot/index.ts`, `src/api.ts`, `src/message-handler.ts`)
-- WeCom official documentation conventions for push/callback APIs (implied by `.planning/PROJECT.md` decisions)
-- `.planning/codebase/ARCHITECTURE.md` existing architecture description
-- `.planning/codebase/STRUCTURE.md` codebase layout
-
----
-*Architecture research for: aibot-node-sdk async persistence and HTTP fallback*
-*Researched: 2026-04-14*
+- Existing codebase: `src/ai/adapter.ts`, `src/ai/api-adapter.ts`, `src/memory.ts`, `src/bot/index.ts`, `src/config/index.ts`
+- Adapter / Decorator patterns: Gang of Four Design Patterns
+- SQLite WAL mode best practices: SQLite official documentation (https://sqlite.org/wal.html)
