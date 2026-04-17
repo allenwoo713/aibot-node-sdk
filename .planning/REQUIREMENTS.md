@@ -50,22 +50,22 @@
 
 | Requirement | Phase | Plan |
 |-------------|-------|------|
-| AIAPI-01 | — | — |
-| AIAPI-02 | — | — |
-| AIAPI-03 | — | — |
-| AIAPI-04 | — | — |
-| AIAPI-05 | — | — |
-| AIAPI-06 | — | — |
-| PERS-01 | — | — |
-| PERS-02 | — | — |
-| PERS-03 | — | — |
-| PERS-04 | — | — |
-| PERS-05 | — | — |
-| PERS-06 | — | — |
-| INTEG-01 | — | — |
-| INTEG-02 | — | — |
-| INTEG-03 | — | — |
-| INTEG-04 | — | — |
+| AIAPI-01 | Phase 4 | — |
+| AIAPI-02 | Phase 4 | — |
+| AIAPI-03 | Phase 4 | — |
+| AIAPI-04 | Phase 4 | — |
+| AIAPI-05 | Phase 4 | — |
+| AIAPI-06 | Phase 4 | — |
+| PERS-01 | Phase 5 | — |
+| PERS-02 | Phase 5 | — |
+| PERS-03 | Phase 5 | — |
+| PERS-04 | Phase 5 | — |
+| PERS-05 | Phase 5 | — |
+| PERS-06 | Phase 5 | — |
+| INTEG-01 | Phase 6 | — |
+| INTEG-02 | Phase 6 | — |
+| INTEG-03 | Phase 6 | — |
+| INTEG-04 | Phase 6 | — |
 
 ---
-*Last updated: 2026-04-17 — Milestone v1.1 requirements defined*
+*Last updated: 2026-04-17 — Milestone v1.1 roadmap defined*
