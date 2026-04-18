@@ -16,7 +16,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 4. AI API Validation & Reliability | 0/TBD | Not started | — |
+| 4. AI API Validation & Reliability | 0/3 | Not started | — |
 | 5. Persistent Conversation Storage | 0/TBD | Not started | — |
 | 6. Integration & Deployment | 0/TBD | Not started | — |
 
@@ -28,12 +28,17 @@
 **Requirements**: AIAPI-01, AIAPI-02, AIAPI-03, AIAPI-04, AIAPI-05, AIAPI-06
 **Success Criteria** (what must be TRUE):
   1. User receives a validated fallback response when the upstream AI API returns malformed or empty content blocks
-  2. User can configure retry policies (maxRetries, base delay, backoff multiplier, jitter) via `BotConfig`
+  2. User can configure retry policies (maxRetries, base delay, backoff multiplier, jitter) via BotConfig
   3. Retry logic only retries on retryable errors (429, 5xx, timeout) and fails fast on non-retryable errors (400, 401, 403, 404, 422)
   4. SDK surfaces structured error classification (retryable, rate_limited, auth_invalid, unknown) for operator observability
-  5. Token usage is tracked and forwarded in `ChatResult` when the API returns it
-  6. Input payloads exceeding `maxInputTokens` are rejected or truncated before the API call to prevent runaway costs
-**Plans**: TBD
+  5. Token usage is tracked and forwarded in ChatResult when the API returns it
+  6. Input payloads exceeding maxInputTokens are rejected or truncated before the API call to prevent runaway costs
+**Plans**: 3 plans
+
+Plan list:
+- [ ] 04-01-PLAN.md — Config contracts and ChatResult extension
+- [ ] 04-02-PLAN.md — Core adapter implementation (retry, validation, classification, truncation)
+- [ ] 04-03-PLAN.md — Bot orchestrator integration and full test suite verification
 
 ### Phase 5: Persistent Conversation Storage
 **Goal**: Developers can replace JSON file persistence with a robust SQLite-backed store without breaking existing consumers
