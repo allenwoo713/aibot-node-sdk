@@ -59,12 +59,14 @@ Plan list:
 - [x] 05-03-PLAN.md — Async lifecycle wiring + comprehensive tests
 
 ### Phase 6: Integration & Deployment
-**Goal**: The bot service shuts down gracefully and deploys reliably with the new SQLite dependency
+**Goal**: The bot service deploys reliably with the new SQLite dependency and the SDK public API exposes the persistence layer
 **Depends on**: Phase 4, Phase 5
-**Requirements**: INTEG-01, INTEG-02, INTEG-03, INTEG-04
+**Requirements**: INTEG-01, INTEG-02, INTEG-03, INTEG-04, INTEG-05
 **Success Criteria** (what must be TRUE):
   1. `BotOrchestrator.stop()` closes the persistence backend connection before exiting
   2. `entry.ts` graceful shutdown is async and awaits `bot.stop()` on SIGINT/SIGTERM
-  3. Docker image builds successfully with the chosen SQLite dependency
-  4. Full test suite (existing + new) passes; coverage does not regress below current levels
+  3. Dockerfile production stage correctly handles the better-sqlite3 native addon without build tools
+  4. Docker image builds successfully end-to-end
+  5. SDK public API (`src/index.ts`) exports `PersistenceBackend`, `JsonFileBackend`, `SqliteBackend`, `ConversationStore`, and related types
+  6. Full test suite (existing + new) passes; coverage does not regress below current levels
 **Plans**: TBD
