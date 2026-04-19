@@ -18,7 +18,7 @@
 |-------|----------------|--------|-----------|
 | 4. AI API Validation & Reliability | 3/3 | Complete | 2026-04-19 |
 | 5. Persistent Conversation Storage | 3/3 | Complete | 2026-04-19 |
-| 6. Integration & Deployment | 0/TBD | Not started | — |
+| 6. Integration & Deployment | 0/2 | Not started | — |
 
 ## Phase Details
 
@@ -69,4 +69,8 @@ Plan list:
   4. Docker image builds successfully end-to-end
   5. SDK public API (`src/index.ts`) exports `PersistenceBackend`, `JsonFileBackend`, `SqliteBackend`, `ConversationStore`, and related types
   6. Full test suite (existing + new) passes; coverage does not regress below current levels
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plan list:
+- [ ] 06-01-PLAN.md — Dockerfile fix + public API exports
+- [ ] 06-02-PLAN.md — Docker build verification + test suite validation
