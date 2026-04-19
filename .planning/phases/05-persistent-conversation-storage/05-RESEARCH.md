@@ -438,17 +438,15 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 | A2 | `@types/better-sqlite3` v7.6.13 is compatible with `better-sqlite3` v12.9.0 | Standard Stack | Type mismatches if types lag behind; can fall back to `skipLibCheck` or custom type declarations |
 | A3 | WAL mode `-wal` and `-shm` files are handled correctly by Docker volume mounts if the persistence directory is mounted | Common Pitfalls | Data loss if volume mount doesn't include the sidecar files; should mount the directory, not the file |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Alpine build tool package names**
-   - What we know: `python3`, `make`, `g++` are typically needed for `node-gyp` on Alpine.
-   - What's unclear: Whether `node:22-alpine` needs `build-base` (metapackage) or individual packages suffice.
-   - Recommendation: Try `apk add --no-cache python3 make g++` first in Dockerfile builder stage. If `better-sqlite3` prebuilt binaries are available for Node 22 + musl, compilation may be skipped entirely.
+1. **Alpine build tool package names** — RESOLVED
+   - Decision: Use individual packages `python3 make g++` via `apk add --no-cache python3 make g++` in the Dockerfile builder stage.
+   - Rationale: Multi-stage build keeps build tools out of the production image. The compiled `.node` native addon is copied from builder to production stage.
 
-2. **better-sqlite3 prebuilt binaries for Node 22 + Alpine/musl**
-   - What we know: `better-sqlite3` distributes prebuilt binaries for common platforms.
-   - What's unclear: Whether Node 22 on Alpine/musl has a prebuilt binary available.
-   - Recommendation: Attempt install without build tools first. If `node-gyp` compilation triggers, add build tools to Dockerfile.
+2. **better-sqlite3 prebuilt binaries for Node 22 + Alpine/musl** — RESOLVED
+   - Decision: Always include build tools in the builder stage. If prebuilt binaries are available, `node-gyp` compilation is skipped automatically. If not, compilation proceeds with the installed tools.
+   - Rationale: `better-sqlite3` checks for prebuilt binaries before attempting compilation. Adding build tools is a no-op when prebuilt binaries exist, and essential when they don't.
 
 ## Environment Availability
 
