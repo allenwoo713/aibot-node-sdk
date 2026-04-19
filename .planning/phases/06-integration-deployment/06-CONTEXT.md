@@ -61,10 +61,10 @@ RUN pnpm install --prod --frozen-lockfile
 ### Export List for src/index.ts
 Add to existing exports:
 - `ConversationStore` from `'./memory'`
-- `PersistenceBackend` from `'./persistence/backend'`
+- `PersistenceBackend` from `'./persistence'`
 - `JsonFileBackend` from `'./persistence/json-file-backend'`
 - `SqliteBackend` from `'./persistence/sqlite-backend'`
-- Types: `HistoryMessage`, `ConversationRecord` from `'./types'`
+- Types: `HistoryMessage`, `ConversationRecord` from `'./persistence'`
 
 ## Deferred Ideas
 
