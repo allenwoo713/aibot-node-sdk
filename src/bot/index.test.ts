@@ -66,6 +66,7 @@ function createBot() {
     apiTimeoutMs: 5000,
     maxOutputTokens: 100,
     persistencePath: TEST_PERSISTENCE_PATH,
+    persistenceBackend: 'json',
     internalSystemPrompt: 'Internal prompt',
     externalSystemPrompt: 'External prompt',
     maxInputTokens: 100,
@@ -81,17 +82,29 @@ function createBot() {
 }
 
 describe('BotOrchestrator', () => {
+  function cleanupBotTestFiles() {
+    const dbPath = TEST_PERSISTENCE_PATH.replace('.json', '.db');
+    for (const p of [TEST_PERSISTENCE_PATH, `${TEST_PERSISTENCE_PATH}.tmp`, dbPath, `${dbPath}-wal`, `${dbPath}-shm`]) {
+      try { fs.rmSync(p, { recursive: true, force: true }); } catch { /* ignore */ }
+    }
+    try {
+      const dir = path.dirname(TEST_PERSISTENCE_PATH);
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        if (file.includes('.migrated-')) {
+          fs.rmSync(path.join(dir, file), { force: true });
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
   beforeEach(() => {
     chatMock.mockReset();
-    if (fs.existsSync(TEST_PERSISTENCE_PATH)) {
-      fs.unlinkSync(TEST_PERSISTENCE_PATH);
-    }
+    cleanupBotTestFiles();
   });
 
   afterEach(() => {
-    if (fs.existsSync(TEST_PERSISTENCE_PATH)) {
-      fs.unlinkSync(TEST_PERSISTENCE_PATH);
-    }
+    cleanupBotTestFiles();
   });
 
   it('replies to single chat text messages', async () => {
@@ -218,5 +231,12 @@ describe('BotOrchestrator', () => {
     expect(calls[calls.length - 1][3]).toBe(true);
     // Earlier calls should not finish
     expect(calls[0][3]).toBe(false);
+  });
+
+  it('stops transport and closes store on stop', async () => {
+    const bot = createBot();
+    const storeCloseSpy = vi.spyOn((bot as any).store, 'close').mockResolvedValue(undefined);
+    await bot.stop();
+    expect(storeCloseSpy).toHaveBeenCalled();
   });
 });

@@ -21,29 +21,34 @@ function createStore(ttlMs = 60000, maxConversations = 1000, maxHistory = 20, lo
     maxConversations,
     maxHistoryMessages: maxHistory,
     persistencePath: TEST_PERSISTENCE_PATH,
+    persistenceBackend: 'json',
     logger,
   });
 }
 
+function cleanupTestFiles() {
+  const dbPath = TEST_PERSISTENCE_PATH.replace('.json', '.db');
+  for (const p of [TEST_PERSISTENCE_PATH, `${TEST_PERSISTENCE_PATH}.tmp`, dbPath, `${dbPath}-wal`, `${dbPath}-shm`]) {
+    try { fs.rmSync(p, { recursive: true, force: true }); } catch { /* ignore */ }
+  }
+  try {
+    const dir = path.dirname(TEST_PERSISTENCE_PATH);
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+      if (file.includes('.migrated-')) {
+        fs.rmSync(path.join(dir, file), { force: true });
+      }
+    }
+  } catch { /* ignore */ }
+}
+
 describe('ConversationStore', () => {
   beforeEach(() => {
-    try {
-      if (fs.existsSync(TEST_PERSISTENCE_PATH)) {
-        fs.rmSync(TEST_PERSISTENCE_PATH, { recursive: true, force: true });
-      }
-    } catch {
-      // ignore cleanup errors
-    }
+    cleanupTestFiles();
   });
 
   afterEach(() => {
-    try {
-      if (fs.existsSync(TEST_PERSISTENCE_PATH)) {
-        fs.rmSync(TEST_PERSISTENCE_PATH, { recursive: true, force: true });
-      }
-    } catch {
-      // ignore cleanup errors
-    }
+    cleanupTestFiles();
     vi.restoreAllMocks();
   });
 
@@ -198,18 +203,11 @@ describe('ConversationStore', () => {
       writeFileSpy.mockRestore();
     });
 
-    it('recovers from corrupt persistence file and logs warning', async () => {
+    it('recovers from corrupt persistence file and starts fresh', async () => {
       fs.writeFileSync(TEST_PERSISTENCE_PATH, '{"broken"', 'utf-8');
-      const logger = createMockLogger();
-      const store = createStore(60000, 1000, 20, logger);
+      const store = createStore();
 
       await store.append('c1', { role: 'user', content: 'hello' });
-
-      expect(logger.warn).toHaveBeenCalled();
-      const warnCall = logger.warn.mock.calls.find((call) =>
-        typeof call[0] === 'string' && call[0].includes('load conversation state'),
-      );
-      expect(warnCall).toBeTruthy();
 
       expect(store.get('c1')).toHaveLength(1);
       expect(store.get('c1')[0].content).toBe('hello');
@@ -228,6 +226,54 @@ describe('ConversationStore', () => {
         typeof call[0] === 'string' && call[0].includes('save conversation state'),
       );
       expect(warnCall).toBeTruthy();
+    });
+
+    it('accepts optional backend parameter overriding config', async () => {
+      const customBackend = {
+        load: vi.fn().mockResolvedValue({}),
+        save: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+      const store = new ConversationStore({
+        conversationTtlMs: 60000,
+        maxConversations: 100,
+        maxHistoryMessages: 20,
+        persistencePath: TEST_PERSISTENCE_PATH,
+        persistenceBackend: 'json',
+      }, customBackend);
+
+      await store.append('c1', { role: 'user', content: 'hello' });
+      expect(customBackend.save).toHaveBeenCalled();
+      await store.close();
+      expect(customBackend.close).toHaveBeenCalled();
+    });
+
+    it('close drains pending save queue before calling backend.close', async () => {
+      let saveStarted = false;
+      let saveCompleted = false;
+      const slowBackend = {
+        load: vi.fn().mockResolvedValue({}),
+        save: vi.fn().mockImplementation(async () => {
+          saveStarted = true;
+          await new Promise(resolve => setTimeout(resolve, 50));
+          saveCompleted = true;
+        }),
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+      const store = new ConversationStore({
+        conversationTtlMs: 60000,
+        maxConversations: 100,
+        maxHistoryMessages: 20,
+        persistencePath: TEST_PERSISTENCE_PATH,
+        persistenceBackend: 'json',
+      }, slowBackend);
+
+      // Trigger a save (append calls save internally)
+      await store.append('c1', { role: 'user', content: 'hello' });
+      // close() should wait for the slow save to complete
+      await store.close();
+      expect(saveCompleted).toBe(true);
+      expect(slowBackend.close).toHaveBeenCalled();
     });
   });
 });

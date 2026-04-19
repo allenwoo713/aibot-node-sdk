@@ -18,6 +18,7 @@ vi.mock('../src/config', () => ({
     apiTimeoutMs: 5000,
     maxOutputTokens: 100,
     persistencePath: TEST_PERSISTENCE_PATH,
+    persistenceBackend: 'json',
     internalSystemPrompt: 'You are helpful.',
     externalSystemPrompt: 'You are a guest helper.',
     corpId: 'corp-smoke',
@@ -57,22 +58,34 @@ vi.mock('../src/transport', async () => {
 });
 
 describe('Bot Entry Smoke', () => {
-  beforeEach(() => {
-    if (fs.existsSync(TEST_PERSISTENCE_PATH)) {
-      fs.unlinkSync(TEST_PERSISTENCE_PATH);
+  function cleanupSmokeFiles() {
+    const dbPath = TEST_PERSISTENCE_PATH.replace('.json', '.db');
+    for (const p of [TEST_PERSISTENCE_PATH, `${TEST_PERSISTENCE_PATH}.tmp`, dbPath, `${dbPath}-wal`, `${dbPath}-shm`]) {
+      try { fs.rmSync(p, { recursive: true, force: true }); } catch { /* ignore */ }
     }
+    try {
+      const dir = path.dirname(TEST_PERSISTENCE_PATH);
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        if (file.includes('.migrated-')) {
+          fs.rmSync(path.join(dir, file), { force: true });
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  beforeEach(() => {
+    cleanupSmokeFiles();
   });
 
   afterEach(() => {
-    if (fs.existsSync(TEST_PERSISTENCE_PATH)) {
-      fs.unlinkSync(TEST_PERSISTENCE_PATH);
-    }
+    cleanupSmokeFiles();
   });
 
   it('loads config and instantiates full stack without throwing', async () => {
     const { bot } = await import('../src/bot/entry');
     expect(bot).toBeDefined();
     expect((bot as any).transport).toBeDefined();
-    bot.stop();
+    await bot.stop();
   });
 });

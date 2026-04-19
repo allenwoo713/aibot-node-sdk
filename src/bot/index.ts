@@ -40,7 +40,8 @@ export class BotOrchestrator {
     this.transport.connect();
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
+    await this.store.close();
     this.transport.stop();
   }
 

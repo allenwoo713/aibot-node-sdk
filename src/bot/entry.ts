@@ -23,9 +23,9 @@ export const bot = new BotOrchestrator(config, transport);
 
 bot.start();
 
-function gracefulShutdown(signal: string) {
+async function gracefulShutdown(signal: string) {
   console.log(`\nReceived ${signal}, shutting down bot...`);
-  bot.stop();
+  await bot.stop();
   process.exit(0);
 }
 
