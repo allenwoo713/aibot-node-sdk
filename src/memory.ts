@@ -1,37 +1,41 @@
-import fs from 'fs/promises';
-import path from 'path';
 import type { BotConfig } from './config';
 import type { Logger } from './types';
+import type { PersistenceBackend, ConversationRecord, HistoryMessage } from './persistence';
+import { JsonFileBackend } from './persistence/json-file-backend';
+import { SqliteBackend } from './persistence/sqlite-backend';
 
-export interface HistoryMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-}
-
-interface ConversationRecord {
-  messages: HistoryMessage[];
-  lastAccessedAt: number;
-}
+export { HistoryMessage, ConversationRecord } from './persistence';
 
 /**
  * In-memory conversation store with lazy TTL eviction, LRU cap,
- * sliding window truncation, and JSON-file persistence.
+ * sliding window truncation, and pluggable persistence backend.
  */
 export class ConversationStore {
   private store = new Map<string, ConversationRecord>();
   private config: Pick<
     BotConfig,
-    'conversationTtlMs' | 'maxConversations' | 'maxHistoryMessages' | 'persistencePath'
+    'conversationTtlMs' | 'maxConversations' | 'maxHistoryMessages' | 'persistencePath' | 'persistenceBackend'
   >;
   private logger: Logger | undefined;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
   private saveQueue: Promise<void> = Promise.resolve();
+  private backend: PersistenceBackend;
 
-  constructor(config: Pick<BotConfig, 'conversationTtlMs' | 'maxConversations' | 'maxHistoryMessages' | 'persistencePath'> & { logger?: Logger }) {
+  constructor(
+    config: Pick<BotConfig, 'conversationTtlMs' | 'maxConversations' | 'maxHistoryMessages' | 'persistencePath' | 'persistenceBackend'> & { logger?: Logger },
+    backend?: PersistenceBackend,
+  ) {
     this.config = config;
     this.logger = config.logger;
+    if (backend) {
+      this.backend = backend;
+    } else if (config.persistenceBackend === 'sqlite') {
+      const dbPath = config.persistencePath.replace(/\.json$/, '.db');
+      this.backend = new SqliteBackend(dbPath, config.persistencePath, config.conversationTtlMs, this.logger);
+    } else {
+      this.backend = new JsonFileBackend(config.persistencePath);
+    }
   }
 
   /** Initialize once by loading state from disk. */
@@ -48,15 +52,12 @@ export class ConversationStore {
     return this.initPromise;
   }
 
-  /** Load state from disk if the file exists. */
+  /** Load state from persistence backend. */
   private async load(): Promise<void> {
     try {
-      const exists = await fs.access(this.config.persistencePath).then(() => true).catch(() => false);
-      if (!exists) return;
-      const raw = await fs.readFile(this.config.persistencePath, 'utf-8');
-      const parsed = JSON.parse(raw) as Record<string, ConversationRecord>;
+      const records = await this.backend.load();
       const now = Date.now();
-      for (const [id, record] of Object.entries(parsed)) {
+      for (const [id, record] of Object.entries(records)) {
         if (now - record.lastAccessedAt < this.config.conversationTtlMs) {
           this.store.set(id, record);
         }
@@ -76,14 +77,7 @@ export class ConversationStore {
 
   private async doSave(): Promise<void> {
     const obj = Object.fromEntries(this.store.entries());
-    const data = JSON.stringify(obj);
-    if (process.platform !== 'win32') {
-      const tmpPath = `${this.config.persistencePath}.tmp`;
-      await fs.writeFile(tmpPath, data, 'utf-8');
-      await fs.rename(tmpPath, this.config.persistencePath);
-    } else {
-      await fs.writeFile(this.config.persistencePath, data, 'utf-8');
-    }
+    await this.backend.save(obj);
   }
 
   /** Get conversation history (without system prompt). */
@@ -150,6 +144,12 @@ export class ConversationStore {
       messages.push({ role: 'user', content: incomingUserMessage });
     }
     return messages;
+  }
+
+  async close(): Promise<void> {
+    // Drain the save queue first
+    await this.saveQueue;
+    await this.backend.close();
   }
 
   private evictIfExpired(conversationId: string): void {

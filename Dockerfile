@@ -3,6 +3,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Install build tools for native addons (better-sqlite3)
+RUN apk add --no-cache python3 make g++
+
 # Install pnpm
 RUN npm install -g pnpm
 

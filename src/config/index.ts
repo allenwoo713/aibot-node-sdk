@@ -35,6 +35,8 @@ export interface BotConfig {
   maxOutputTokens: number;
   /** Path to persist conversation state */
   persistencePath: string;
+  /** Persistence backend: 'json' or 'sqlite' (default: 'json') */
+  persistenceBackend: 'json' | 'sqlite';
   /** System prompt for internal contacts */
   internalSystemPrompt: string;
   /** System prompt for external contacts */
@@ -98,6 +100,7 @@ export function loadConfig(): BotConfig {
     apiTimeoutMs: getEnvInt('API_TIMEOUT_MS', 30 * 1000),
     maxOutputTokens: getEnvInt('MAX_OUTPUT_TOKENS', 2048),
     persistencePath: getEnv('PERSISTENCE_PATH', path.resolve(process.cwd(), '.bot-state.json')),
+    persistenceBackend: getEnv('PERSISTENCE_BACKEND', 'json') as 'json' | 'sqlite',
     internalSystemPrompt: getEnv(
       'INTERNAL_SYSTEM_PROMPT',
       'You are a helpful AI assistant for our company employees. You can answer questions about internal processes, draft emails, and help with code.',
@@ -116,6 +119,10 @@ export function loadConfig(): BotConfig {
     fallbackValidationFailed: getEnv('FALLBACK_VALIDATION_FAILED', 'AI 返回了无效响应，请重试。'),
     fallbackRetryable: getEnv('FALLBACK_RETRYABLE', '服务暂时繁忙，请稍后再试。'),
   };
+
+  if (config.persistenceBackend !== 'json' && config.persistenceBackend !== 'sqlite') {
+    throw new Error(`Invalid PERSISTENCE_BACKEND value: ${config.persistenceBackend}. Must be 'json' or 'sqlite'.`);
+  }
 
   // Ensure persistence directory exists
   const dir = path.dirname(config.persistencePath);
