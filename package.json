@@ -39,6 +39,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
     "axios": "^1.6.7",
+    "better-sqlite3": "^12.9.0",
     "eventemitter3": "^5.0.1",
     "ws": "^8.16.0"
   },
@@ -47,6 +48,7 @@
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-typescript": "^11.1.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.16",
     "@types/ws": "^8.5.10",
     "rollup": "^4.59.0",

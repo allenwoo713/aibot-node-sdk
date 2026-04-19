@@ -4,7 +4,7 @@ import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import { dts } from 'rollup-plugin-dts';
 
-const external = ['ws', 'axios', 'eventemitter3', 'crypto', 'buffer', '@anthropic-ai/sdk', 'fs', 'path'];
+const external = ['ws', 'axios', 'eventemitter3', 'crypto', 'buffer', '@anthropic-ai/sdk', 'fs', 'path', 'better-sqlite3'];
 
 export default [
   // CJS & ESM 输出（SDK 库）
