@@ -68,6 +68,15 @@ function createBot() {
     persistencePath: TEST_PERSISTENCE_PATH,
     internalSystemPrompt: 'Internal prompt',
     externalSystemPrompt: 'External prompt',
+    maxInputTokens: 100,
+    maxRetries: 1,
+    retryBaseDelayMs: 2000,
+    retryBackoffMultiplier: 2,
+    retryJitter: true,
+    fallbackRateLimit: 'Rate limit fallback',
+    fallbackAuthInvalid: 'Auth invalid fallback',
+    fallbackValidationFailed: 'Validation failed fallback',
+    fallbackRetryable: 'Retryable fallback',
   });
 }
 
@@ -111,6 +120,19 @@ describe('BotOrchestrator', () => {
 
     const transport = (bot as any).transport;
     expect(transport.sendText).toHaveBeenCalledWith(frame, 'AI is down');
+  });
+
+  it('logs errorCode when AI returns a classified error', async () => {
+    chatMock.mockResolvedValueOnce({ content: 'Rate limit hit', error: true, errorCode: 'rate_limited' });
+
+    const bot = createBot();
+    const frame = createMockFrame();
+    (bot as any).transport.emit('message.text', frame);
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    const transport = (bot as any).transport;
+    expect(transport.sendText).toHaveBeenCalledWith(frame, 'Rate limit hit');
   });
 
   it('rate limits excess requests per conversation', async () => {

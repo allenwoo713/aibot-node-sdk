@@ -55,4 +55,34 @@ describe('loadConfig', () => {
     process.env.CONVERSATION_TTL_MS = 'not-a-number';
     expect(() => loadConfig()).toThrow('Invalid integer value for environment variable: CONVERSATION_TTL_MS=not-a-number');
   });
+
+  it('applies defaults for new AI retry and fallback config', () => {
+    const config = loadConfig();
+    expect(config.maxInputTokens).toBe(8192);
+    expect(config.maxRetries).toBe(1);
+    expect(config.retryBaseDelayMs).toBe(2000);
+    expect(config.retryBackoffMultiplier).toBe(2);
+    expect(config.retryJitter).toBe(true);
+    expect(config.fallbackRateLimit).toBe('请求过于频繁，请稍后再试。');
+    expect(config.fallbackAuthInvalid).toBe('AI 服务认证失败，请联系管理员。');
+    expect(config.fallbackValidationFailed).toBe('AI 返回了无效响应，请重试。');
+    expect(config.fallbackRetryable).toBe('服务暂时繁忙，请稍后再试。');
+  });
+
+  it('allows overrides for new AI config via environment variables', () => {
+    process.env.MAX_INPUT_TOKENS = '4096';
+    process.env.MAX_RETRIES = '3';
+    process.env.RETRY_BASE_DELAY_MS = '1000';
+    process.env.RETRY_BACKOFF_MULTIPLIER = '3';
+    process.env.RETRY_JITTER = 'false';
+    process.env.FALLBACK_RATE_LIMIT = 'Custom rate limit';
+
+    const config = loadConfig();
+    expect(config.maxInputTokens).toBe(4096);
+    expect(config.maxRetries).toBe(3);
+    expect(config.retryBaseDelayMs).toBe(1000);
+    expect(config.retryBackoffMultiplier).toBe(3);
+    expect(config.retryJitter).toBe(false);
+    expect(config.fallbackRateLimit).toBe('Custom rate limit');
+  });
 });

@@ -39,6 +39,24 @@ export interface BotConfig {
   internalSystemPrompt: string;
   /** System prompt for external contacts */
   externalSystemPrompt: string;
+  /** Max input tokens before truncating conversation history (default: 8192) */
+  maxInputTokens: number;
+  /** Max retries for retryable AI API errors (default: 1) */
+  maxRetries: number;
+  /** Base delay in ms before first retry (default: 2000) */
+  retryBaseDelayMs: number;
+  /** Backoff multiplier between retries (default: 2) */
+  retryBackoffMultiplier: number;
+  /** Whether to add random jitter to retry delays (default: true) */
+  retryJitter: boolean;
+  /** Fallback message for rate limit errors */
+  fallbackRateLimit: string;
+  /** Fallback message for auth invalid errors */
+  fallbackAuthInvalid: string;
+  /** Fallback message for validation failures (empty/malformed response) */
+  fallbackValidationFailed: string;
+  /** Fallback message for generic retryable errors */
+  fallbackRetryable: string;
   /** Optional logger for observability */
   logger?: Logger;
 }
@@ -88,6 +106,15 @@ export function loadConfig(): BotConfig {
       'EXTERNAL_SYSTEM_PROMPT',
       'You are a helpful AI assistant for external visitors. Do not discuss internal company data, pricing, or confidential information. Keep replies concise and professional.',
     ),
+    maxInputTokens: getEnvInt('MAX_INPUT_TOKENS', 8192),
+    maxRetries: getEnvInt('MAX_RETRIES', 1),
+    retryBaseDelayMs: getEnvInt('RETRY_BASE_DELAY_MS', 2000),
+    retryBackoffMultiplier: getEnvInt('RETRY_BACKOFF_MULTIPLIER', 2),
+    retryJitter: process.env.RETRY_JITTER !== 'false',
+    fallbackRateLimit: getEnv('FALLBACK_RATE_LIMIT', '请求过于频繁，请稍后再试。'),
+    fallbackAuthInvalid: getEnv('FALLBACK_AUTH_INVALID', 'AI 服务认证失败，请联系管理员。'),
+    fallbackValidationFailed: getEnv('FALLBACK_VALIDATION_FAILED', 'AI 返回了无效响应，请重试。'),
+    fallbackRetryable: getEnv('FALLBACK_RETRYABLE', '服务暂时繁忙，请稍后再试。'),
   };
 
   // Ensure persistence directory exists

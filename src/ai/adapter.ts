@@ -19,6 +19,8 @@ export interface ChatResult {
     input_tokens: number;
     output_tokens: number;
   };
+  /** Structured error classification for fallback handling and observability. */
+  errorCode?: 'retryable' | 'rate_limited' | 'auth_invalid' | 'validation_failed' | 'unknown';
 }
 
 export interface AiBackend {

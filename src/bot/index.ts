@@ -91,8 +91,16 @@ export class BotOrchestrator {
     });
 
     if (result.error) {
+      this.logger.warn(
+        'AI adapter returned error',
+        { conversationId, errorCode: result.errorCode || 'unknown' },
+      );
       await this.sendText(frame, result.content);
       return;
+    }
+
+    if (result.usage) {
+      this.logger.debug('AI token usage', { conversationId, usage: result.usage });
     }
 
     // Append assistant reply to memory
