@@ -73,7 +73,30 @@
 
 | Requirement | Phase | Plan | Status |
 |-------------|-------|------|--------|
-| *(To be filled by roadmap)* | | | |
+| WECOM-01 | 7 | — | Pending |
+| WECOM-02 | 7 | — | Pending |
+| WECOM-03 | 7 | — | Pending |
+| WECOM-04 | 7 | — | Pending |
+| DOCKER-01 | 8 | — | Pending |
+| DOCKER-02 | 8 | — | Pending |
+| DOCKER-03 | 8 | — | Pending |
+| DOCKER-04 | 8 | — | Pending |
+| DOC-01 | 9 | — | Pending |
+| DOC-02 | 9 | — | Pending |
+| DOC-03 | 9 | — | Pending |
+| DOC-04 | 9 | — | Pending |
+| BOT-01 | 9 | — | Pending |
+| BOT-02 | 9 | — | Pending |
+| BOT-04 | 9 | — | Pending |
+| SCHED-01 | 10 | — | Pending |
+| SCHED-02 | 10 | — | Pending |
+| SCHED-03 | 10 | — | Pending |
+| SCHED-04 | 10 | — | Pending |
+| BOT-03 | 10 | — | Pending |
+| TEST-01 | 11 | — | Pending |
+| TEST-02 | 11 | — | Pending |
+| TEST-03 | 11 | — | Pending |
+| TEST-04 | 11 | — | Pending |
 
 ---
 *Last updated: 2026-04-20*

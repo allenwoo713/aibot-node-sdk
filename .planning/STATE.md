@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: WeCom Ecosystem Extension
-status: Defining requirements
+status: Roadmap defined
 last_updated: "2026-04-20T17:30:00.000Z"
-last_activity: "Milestone v1.2 started"
+last_activity: "Roadmap created for v1.2 (phases 7-11)"
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,13 +19,13 @@ progress:
 
 **Project**: aibot-node-sdk
 **Core Value**: Developers can integrate a production-ready AI bot into WeCom with minimal setup, while the SDK provides reliable real-time messaging and extensible architecture.
-**Current Focus**: Planning v1.2 requirements and roadmap
+**Current Focus**: Planning v1.2 roadmap (phases 7–11)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap defined)
 Milestone: v1.2 (planning)
-**Status**: Defining requirements
+**Status**: Roadmap defined, awaiting approval
 **Progress**: 0%
 
 ```
@@ -49,12 +49,16 @@ Milestone: v1.2 (planning)
 - Migration renames (not deletes) original JSON file for safety
 - FallbackTransport dedup key = `${msgid}:${eventName}` to fix cross-transport event dropping
 - v1.2 adopts fixed-command mode (not function calling) for WeCom API integration — simpler, more reliable
+- v1.2 roadmap: 5 phases (7–11) covering WeCom API client, Docker Compose, document reading, schedule management, and test coverage
 
 ### TODOs
 
-- [ ] Define v1.2 requirements
-- [ ] Create v1.2 roadmap
-- [ ] Execute Phase 7 (TBD)
+- [ ] Approve v1.2 roadmap
+- [ ] Execute Phase 7: WeCom API Client Foundation
+- [ ] Execute Phase 8: Docker Compose Deployment
+- [ ] Execute Phase 9: Document Reading Integration
+- [ ] Execute Phase 10: Schedule Management Integration
+- [ ] Execute Phase 11: Testing & Integration
 
 ### Blockers
 
@@ -75,5 +79,5 @@ Items acknowledged and deferred at milestone close on 2026-04-20:
 ## Session Continuity
 
 **Last updated**: 2026-04-20
-**Last action**: Milestone v1.2 planning started
-**Next action**: Define requirements and create roadmap
+**Last action**: Roadmap created for v1.2 (phases 7–11)
+**Next action**: Approve roadmap and begin `/gsd-plan-phase 7`
