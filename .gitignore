@@ -13,3 +13,6 @@ dist/
 # Bot runtime state files
 .bot-state*
 
+# GSD workflow temp files
+.planning/tmp/
+
