@@ -10,7 +10,7 @@
 
 - [x] **Phase 4: AI API Validation & Reliability** — Strengthen AI call handling with response validation, configurable retries, error classification, token tracking, and cost guards
 - [x] **Phase 5: Persistent Conversation Storage** — Replace JSON file persistence with a pluggable backend system including SQLite with WAL mode, while preserving backward compatibility
-- [ ] **Phase 6: Integration & Deployment** — Wire graceful shutdown, async entry handling, Docker builds, and maintain test coverage across the milestone
+- [x] **Phase 6: Integration & Deployment** — Wire graceful shutdown, async entry handling, Docker builds, and maintain test coverage across the milestone
 
 ### Progress
 
@@ -18,7 +18,7 @@
 |-------|----------------|--------|-----------|
 | 4. AI API Validation & Reliability | 3/3 | Complete | 2026-04-19 |
 | 5. Persistent Conversation Storage | 3/3 | Complete | 2026-04-19 |
-| 6. Integration & Deployment | 0/2 | Not started | — |
+| 6. Integration & Deployment | 2/2 | Complete | 2026-04-20 |
 
 ## Phase Details
 
@@ -72,5 +72,5 @@ Plan list:
 **Plans**: 2 plans
 
 Plan list:
-- [ ] 06-01-PLAN.md — Dockerfile fix + public API exports
-- [ ] 06-02-PLAN.md — Docker build verification + test suite validation
+- [x] 06-01-PLAN.md — Dockerfile fix + public API exports
+- [x] 06-02-PLAN.md — Docker build verification + test suite validation
