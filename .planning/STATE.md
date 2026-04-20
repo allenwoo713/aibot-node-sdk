@@ -1,15 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: AI Validation & Persistent Storage
-status: Milestone v1.1 complete — archived and tagged
-last_updated: "2026-04-20T14:30:00.000Z"
+milestone: v1.2
+milestone_name: WeCom Ecosystem Extension
+status: Defining requirements
+last_updated: "2026-04-20T17:30:00.000Z"
+last_activity: "Milestone v1.2 started"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -18,27 +19,18 @@ progress:
 
 **Project**: aibot-node-sdk
 **Core Value**: Developers can integrate a production-ready AI bot into WeCom with minimal setup, while the SDK provides reliable real-time messaging and extensible architecture.
-**Current Focus**: Planning next milestone
+**Current Focus**: Planning v1.2 requirements and roadmap
 
 ## Current Position
 
-Phase: 6 (complete)
-Milestone: v1.1 (archived)
-**Status**: Milestone v1.1 shipped and tagged — awaiting next milestone planning
-**Progress**: 100%
+Phase: Not started (defining requirements)
+Milestone: v1.2 (planning)
+**Status**: Defining requirements
+**Progress**: 0%
 
 ```
-[████████████████████████████] 100%
+[░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
 ```
-
-## Performance Metrics
-
-| Metric | Value |
-|--------|-------|
-| Phases completed | 6/6 (v1.0 + v1.1) |
-| Plans completed | 8/8 (v1.1) |
-| Tests passing | 98/98 |
-| Blockers | 0 |
 
 ## Accumulated Context
 
@@ -56,16 +48,13 @@ Milestone: v1.1 (archived)
 - better-sqlite3 with WAL mode for production SQLite persistence
 - Migration renames (not deletes) original JSON file for safety
 - FallbackTransport dedup key = `${msgid}:${eventName}` to fix cross-transport event dropping
+- v1.2 adopts fixed-command mode (not function calling) for WeCom API integration — simpler, more reliable
 
 ### TODOs
 
-- [x] Plan Phase 4: AI API Validation & Reliability
-- [x] Execute Phase 4: Config contracts, adapter implementation, bot integration
-- [x] Plan Phase 5: Persistent Conversation Storage
-- [x] Execute Phase 5: Database-backed conversation storage
-- [x] Plan Phase 6: Integration & Deployment
-- [x] Execute Phase 6: End-to-end integration and deployment
-- [x] Archive milestone v1.1
+- [ ] Define v1.2 requirements
+- [ ] Create v1.2 roadmap
+- [ ] Execute Phase 7 (TBD)
 
 ### Blockers
 
@@ -78,7 +67,7 @@ Items acknowledged and deferred at milestone close on 2026-04-20:
 | Category | Item | Status |
 |----------|------|--------|
 | test-coverage | AIAPI-06 E2E/UAT for maxInputTokens truncation | deferred |
-| test-coverage | PERS-05 E2E/UAT for JSON→SQLite migration | deferred |
+| test-coverage | PERS-05 E2E/UAT for JSON->SQLite migration | deferred |
 | devops | Dockerfile production stage copies full node_modules (devDependencies included) | deferred |
 | reliability | gracefulShutdown lacks error handling for bot.stop() failures | deferred |
 | process | No Nyquist validation for any phase | deferred |
@@ -86,5 +75,5 @@ Items acknowledged and deferred at milestone close on 2026-04-20:
 ## Session Continuity
 
 **Last updated**: 2026-04-20
-**Last action**: Milestone v1.1 archived, tagged v1.1
-**Next action**: `/gsd-new-milestone` to plan v1.2
+**Last action**: Milestone v1.2 planning started
+**Next action**: Define requirements and create roadmap

@@ -24,15 +24,27 @@ Developers can integrate a production-ready AI bot into WeCom with minimal setup
 - Full test coverage: 98/98 tests passing across 15 test files
 - Graceful shutdown ensures SQLite WAL flush before process exit on SIGINT/SIGTERM
 
+## Current Milestone: v1.2 WeCom Ecosystem Extension
+
+**Goal:** 接入企微开放平台 API 扩展 AI 能力边界，并提供 Docker Compose 生产部署方案。
+
+**Target features:**
+- Docker Compose 部署 (compose.yml, 健康检查, 数据卷持久化)
+- 企微开放平台 API 客户端 (access_token 获取与自动刷新)
+- 微盘文档读取与分析（Bot 通过 `/文档` 指令触发）
+- 日程创建与查询（Bot 通过 `/日程` 指令触发）
+- 新增功能的测试覆盖
+
 ## Next Milestone Goals
 
-*(To be defined via `/gsd-new-milestone`)*
+*(To be defined after v1.2)*
 
 Potential directions:
 - Observability: metrics, structured logging, health checks
 - Multi-tenant support: per-corp configuration, isolation
 - Performance: connection pooling, response streaming
 - Security: input sanitization, rate limiting per corp
+- Bot 多消息类型处理: image, voice, file, mixed, video
 
 ## Evolution
 
