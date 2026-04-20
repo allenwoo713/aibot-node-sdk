@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { loadConfig } from '../config';
 import { BotOrchestrator } from '.';
 import { WsTransport, HttpTransport, FallbackTransport } from '../transport';

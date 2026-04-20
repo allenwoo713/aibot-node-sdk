@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.dockerignore
+Dockerfile
+*.md
+.env
+.env.*
+!.env.example
+scripts/debug
+.planning
+__tests__
+coverage

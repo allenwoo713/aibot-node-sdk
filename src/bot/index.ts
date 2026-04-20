@@ -60,7 +60,9 @@ export class BotOrchestrator {
   }
 
   private async handleTextMessage(frame: WsFrame<TextMessage>): Promise<void> {
+    console.log('[BOT] handleTextMessage called, msgid=', (frame.body as any)?.msgid);
     if (!frame.body || !this.shouldReply(frame)) {
+      console.log('[BOT] shouldReply returned false');
       return;
     }
 

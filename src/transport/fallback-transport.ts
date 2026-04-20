@@ -17,15 +17,16 @@ export class FallbackTransport extends EventEmitter<TransportEventMap> implement
     this.setupForwarding();
   }
 
-  private isDuplicate(msgid: string): boolean {
+  private isDuplicate(msgid: string, eventName: string): boolean {
+    const key = `${msgid}:${eventName}`;
     const now = Date.now();
-    if (this.seenMsgIds.has(msgid)) {
+    if (this.seenMsgIds.has(key)) {
       return true;
     }
-    this.seenMsgIds.set(msgid, now);
-    for (const [id, ts] of this.seenMsgIds) {
+    this.seenMsgIds.set(key, now);
+    for (const [k, ts] of this.seenMsgIds) {
       if (now - ts > 5 * 60 * 1000) {
-        this.seenMsgIds.delete(id);
+        this.seenMsgIds.delete(k);
       }
     }
     return false;
@@ -47,16 +48,16 @@ export class FallbackTransport extends EventEmitter<TransportEventMap> implement
     for (const event of messageEvents) {
       this.primary.on(event as any, (frame: WsFrame) => {
         const msgid = (frame.body as any)?.msgid as string | undefined;
-        if (msgid && this.isDuplicate(msgid)) {
-          this.logger.debug(`Duplicate cross-transport message dropped: ${msgid}`);
+        if (msgid && this.isDuplicate(msgid, event as string)) {
+          this.logger.debug(`Duplicate cross-transport message dropped: ${msgid} (${event})`);
           return;
         }
         this.emit(event as any, frame);
       });
       this.fallback.on(event as any, (frame: WsFrame) => {
         const msgid = (frame.body as any)?.msgid as string | undefined;
-        if (msgid && this.isDuplicate(msgid)) {
-          this.logger.debug(`Duplicate cross-transport message dropped: ${msgid}`);
+        if (msgid && this.isDuplicate(msgid, event as string)) {
+          this.logger.debug(`Duplicate cross-transport message dropped: ${msgid} (${event})`);
           return;
         }
         this.emit(event as any, frame);

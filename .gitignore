@@ -9,3 +9,7 @@ dist/
 .npmrc
 .claude/
 .gstack/
+
+# Bot runtime state files
+.bot-state*
+

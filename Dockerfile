@@ -9,6 +9,9 @@ RUN apk add --no-cache python3 make g++
 # Install pnpm
 RUN npm install -g pnpm
 
+# Use hoisted linker to avoid ESM resolution issues in Docker
+RUN pnpm config set node-linker hoisted
+
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 
@@ -24,11 +27,13 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile
-
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
 
 ENV NODE_ENV=production
+ENV PERSISTENCE_PATH=/app/data/.bot-state.json
+
+VOLUME ["/app/data"]
 
 EXPOSE 3000
 
