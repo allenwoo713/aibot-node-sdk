@@ -79,11 +79,11 @@ Default values are hard-coded in `src/config/index.ts` via the `getEnv(key, defa
 
 ## Per-Environment Overrides
 
-The project does not ship separate `.env.development` or `.env.production` files. To configure different values per environment, create environment-specific `.env` files and load them with your deployment platform's secret manager or a tool such as `dotenv-cli`:
+The project does not ship separate `.env.development` or `.env.production` files. To configure different values per environment, create environment-specific `.env` files and load them with your deployment platform's secret manager or Node.js built-in env-file support:
 
 ```bash
-# Example: running with a production env file
-npx dotenv-cli -e .env.production -- npm start
+# Example: running with a production env file (Node.js >= 20.6)
+node --env-file=.env.production dist/bot/entry.js
 ```
 
 In containerized deployments, pass environment variables directly via `docker run -e BOT_ID=...` or through the orchestrator's secret management (e.g., Kubernetes Secrets, Docker Swarm secrets, or the platform dashboard).

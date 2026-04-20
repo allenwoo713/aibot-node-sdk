@@ -46,7 +46,7 @@ The CI pipeline is defined in `.github/workflows/ci.yml`.
 5. Run tests: `pnpm test`.
 6. Build artifacts: `pnpm run build`.
 
-No automated deploy or release step is present in CI. Releases are performed manually via `npm run release` or `npm run release:dry`.
+No automated deploy or release step is present in CI. A `release` script is defined in `package.json` for manual publishing.
 
 ## Environment Setup
 

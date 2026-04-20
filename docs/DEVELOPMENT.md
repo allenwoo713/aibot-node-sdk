@@ -56,7 +56,7 @@ pnpm run dev
 | `pnpm run example` | Run the basic usage example (`examples/basic.ts`) with ts-node |
 | `pnpm start` | Run the bot service entry point (`src/bot/entry.ts`) with ts-node |
 | `pnpm test` | Run the full test suite with Vitest |
-| `pnpm run release` | Publish the package using `scripts/publish-all.mjs` |
+| `pnpm run release` | Publish the package (defined in `package.json`) |
 | `pnpm run release:dry` | Dry-run the release script |
 
 ## Code Style

@@ -362,7 +362,7 @@ wsClient.on('message.image', async (frame: WsFrame) => {
 | `heartbeatInterval` | `number` | — | `30000` | 心跳间隔（毫秒） |
 | `requestTimeout` | `number` | — | `10000` | HTTP 请求超时时间（毫秒） |
 | `wsUrl` | `string` | — | `wss://openws.work.weixin.qq.com` | 自定义 WebSocket 连接地址 |
-| `wsOptions` | `string` | — | `string` | 自签证书地址 |
+| `wsOptions` | `WsClientOptions` | — | `{}` | 底层 WebSocket 连接选项（TLS 配置等） |
 | `logger` | `Logger` | — | `DefaultLogger` | 自定义日志实例 |
 
 ---
@@ -388,6 +388,7 @@ wsClient.on('message.image', async (frame: WsFrame) => {
 | `event`                     | `frame: WsFrame<EventMessage>` | 收到事件回调（所有事件类型）                 |
 | `event.enter_chat`          | `frame: WsFrame<EventMessage>` | 收到进入会话事件（用户当天首次进入单聊会话） |
 | `event.template_card_event` | `frame: WsFrame<EventMessage>` | 收到模板卡片事件（用户点击卡片按钮）         |
+| `event.disconnected_event`  | `frame: WsFrame<EventMessage>` | 收到会话断开事件                             |
 | `event.feedback_event`      | `frame: WsFrame<EventMessage>` | 收到用户反馈事件                             |
 
 ---

@@ -14,7 +14,7 @@ See [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) for prerequisites and fir
 - Target: `ES2020`, module: `ESNext`, resolution: `node`
 - Path alias `@/*` maps to `src/*`
 - No checked-in ESLint, Prettier, or Biome configs; formatting relies on developer and editor discipline
-- Please ensure your editor respects `.editorconfig` conventions if one is present
+- No `.editorconfig` is checked in; formatting relies on editor discipline
 
 ## PR Guidelines
 
