@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: — AI Validation & Persistent Storage
-status: Phase 6 complete, milestone v1.1 finished
-last_updated: "2026-04-20T10:05:00.000Z"
+milestone_name: AI Validation & Persistent Storage
+status: Milestone v1.1 complete — archived and tagged
+last_updated: "2026-04-20T14:30:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -18,13 +18,13 @@ progress:
 
 **Project**: aibot-node-sdk
 **Core Value**: Developers can integrate a production-ready AI bot into WeCom with minimal setup, while the SDK provides reliable real-time messaging and extensible architecture.
-**Current Focus**: Integration & Deployment (Phase 6) — end-to-end integration and deployment.
+**Current Focus**: Planning next milestone
 
 ## Current Position
 
 Phase: 6 (complete)
-Plan: —
-**Status**: Phase 6 complete — all 8 plans finished, milestone v1.1 done
+Milestone: v1.1 (archived)
+**Status**: Milestone v1.1 shipped and tagged — awaiting next milestone planning
 **Progress**: 100%
 
 ```
@@ -35,8 +35,8 @@ Plan: —
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 3/3 |
-| Plans completed | 8/8 |
+| Phases completed | 6/6 (v1.0 + v1.1) |
+| Plans completed | 8/8 (v1.1) |
 | Tests passing | 98/98 |
 | Blockers | 0 |
 
@@ -55,6 +55,7 @@ Plan: —
 - PersistenceBackend interface isolates storage logic from ConversationStore
 - better-sqlite3 with WAL mode for production SQLite persistence
 - Migration renames (not deletes) original JSON file for safety
+- FallbackTransport dedup key = `${msgid}:${eventName}` to fix cross-transport event dropping
 
 ### TODOs
 
@@ -64,13 +65,26 @@ Plan: —
 - [x] Execute Phase 5: Database-backed conversation storage
 - [x] Plan Phase 6: Integration & Deployment
 - [x] Execute Phase 6: End-to-end integration and deployment
+- [x] Archive milestone v1.1
 
 ### Blockers
 
 None.
 
+## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-04-20:
+
+| Category | Item | Status |
+|----------|------|--------|
+| test-coverage | AIAPI-06 E2E/UAT for maxInputTokens truncation | deferred |
+| test-coverage | PERS-05 E2E/UAT for JSON→SQLite migration | deferred |
+| devops | Dockerfile production stage copies full node_modules (devDependencies included) | deferred |
+| reliability | gracefulShutdown lacks error handling for bot.stop() failures | deferred |
+| process | No Nyquist validation for any phase | deferred |
+
 ## Session Continuity
 
 **Last updated**: 2026-04-20
-**Last action**: Phase 6 executed — Dockerfile fixed, persistence exports added, 98/98 tests pass
-**Next action**: Milestone v1.1 complete. Consider `/gsd-complete-milestone` or starting v1.2.
+**Last action**: Milestone v1.1 archived, tagged v1.1
+**Next action**: `/gsd-new-milestone` to plan v1.2

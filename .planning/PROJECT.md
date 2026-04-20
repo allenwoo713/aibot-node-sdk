@@ -15,23 +15,24 @@ Developers can integrate a production-ready AI bot into WeCom with minimal setup
 
 ## Current State
 
-**Milestone v1.0 shipped.**
+**Milestone v1.1 shipped.**
 
-- `ConversationStore` uses fully async I/O with a write queue and lazy initialization
-- `Transport` abstraction supports WebSocket primary + HTTP fallback seamlessly
-- `BotOrchestrator` is transport-agnostic and backward-compatible
-- Full test coverage: 61/61 tests passing, including E2E for WebSocket multi-turn, HTTP callback, fallback routing, and entry smoke
-- Live WebSocket UAT verified against the official WeCom gateway (`wss://openws.work.weixin.qq.com`)
+- AI API calls are resilient with configurable retries, response validation, structured error classification, token tracking, and input truncation
+- Conversation persistence is pluggable: JSON file backend (backward-compatible) or SQLite with WAL mode
+- SDK public API exports persistence layer (`ConversationStore`, `PersistenceBackend`, `JsonFileBackend`, `SqliteBackend`)
+- Docker image builds and runs correctly with better-sqlite3 native addon and persistent data volume
+- Full test coverage: 98/98 tests passing across 15 test files
+- Graceful shutdown ensures SQLite WAL flush before process exit on SIGINT/SIGTERM
 
-## Current Milestone: v1.1 AI Validation & Persistent Storage
+## Next Milestone Goals
 
-**Goal:** Strengthen AI call reliability with validation, retries, and cost guards, while replacing JSON-based conversation persistence with a robust database-backed store.
+*(To be defined via `/gsd-new-milestone`)*
 
-**Target features:**
-- AI API call validation (response schema checks, error classification, retry policies, token/cost guards)
-- Conversation persistent storage research + implementation (JSON vs SQLite+WAL vs MongoDB)
-- Backward-compatible `ConversationStore` API
-- Maintained or improved test coverage
+Potential directions:
+- Observability: metrics, structured logging, health checks
+- Multi-tenant support: per-corp configuration, isolation
+- Performance: connection pooling, response streaming
+- Security: input sanitization, rate limiting per corp
 
 ## Evolution
 
@@ -49,6 +50,43 @@ This document evolves at phase transitions and milestone boundaries.
 2. Core Value check — still the right priority?
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
+
+---
+
+<details>
+<summary>Archived v1.1 Content</summary>
+
+## Validated (v1.1)
+
+- AI API response validation with fallback on malformed/empty content blocks — Phase 4
+- Configurable retry policies (maxRetries, base delay, backoff, jitter) via BotConfig — Phase 4
+- Retry logic distinguishing retryable (429, 5xx, timeout) vs permanent (400, 401, 403, 404, 422) errors — Phase 4
+- Structured error classification (retryable, rate_limited, auth_invalid, validation_failed, unknown) — Phase 4
+- Token usage tracking in ChatResult — Phase 4
+- Input payload truncation before API call to prevent runaway costs — Phase 4
+- Pluggable PersistenceBackend interface — Phase 5
+- JsonFileBackend with atomic file writes — Phase 5
+- SqliteBackend with WAL mode and serialized writes — Phase 5
+- ConversationStore.get() remains synchronous with in-memory LRU cache — Phase 5
+- Auto-migration from JSON to SQLite on first startup — Phase 5
+- Parameterized shared behavior tests for all backends — Phase 5
+- BotOrchestrator.stop() closes persistence before transport teardown — Phase 6
+- entry.ts async graceful shutdown on SIGINT/SIGTERM — Phase 6
+- Dockerfile production stage with better-sqlite3 native addon — Phase 6
+- SDK public API exports persistence classes — Phase 6
+
+## Key Decisions (v1.1)
+
+| Decision | Rationale | Outcome |
+|----------|-----------|---------|
+| AI retry defaults: maxRetries=1, retryBaseDelayMs=2000, retryBackoffMultiplier=2, retryJitter=true | Balance reliability vs latency for chat UX | Validated in production — retries handle transient failures without excessive delay |
+| Disable Anthropic SDK built-in retry (maxRetries: 0) | Avoid double retry layers — SDK retry + our retry | Validated — custom retry loop provides full control over classification and backoff |
+| better-sqlite3 with WAL mode | Single-node, synchronous, robust for bot persistence | Validated — Docker restart and SIGTERM both preserve data correctly |
+| Migration renames (not deletes) original JSON file | Safety — allows rollback if migration fails | Validated — unit tests confirm idempotency and corrupt-JSON handling |
+| Fallback messages in Chinese | Match existing WeCom bot UX | Validated — consistent with v1.0 user experience |
+| FallbackTransport dedup key = `${msgid}:${eventName}` | Fix cross-transport event dropping | Validated — bot now receives all message events correctly |
+
+</details>
 
 ---
 
@@ -81,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 </details>
 
 ---
-*Last updated: 2026-04-17 after starting v1.1 milestone*
+*Last updated: 2026-04-20 after v1.1 milestone*
