@@ -73,8 +73,8 @@
 
 | Requirement | Phase | Plan | Status |
 |-------------|-------|------|--------|
-| WECOM-01 | 7 | — | Pending |
-| WECOM-02 | 7 | — | Pending |
+| WECOM-01 | 7 | 07-01 | Complete |
+| WECOM-02 | 7 | 07-01 | Complete |
 | WECOM-03 | 7 | — | Pending |
 | WECOM-04 | 7 | — | Pending |
 | DOCKER-01 | 8 | — | Pending |
