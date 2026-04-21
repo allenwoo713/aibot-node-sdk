@@ -23,6 +23,7 @@ export type { HistoryMessage, ConversationRecord } from './persistence';
 export { generateReqId, generateRandomString } from './utils';
 export type { Transport } from './types/transport';
 export type { CallbackPayload, CallbackResponse, TransportEventMap } from './types/transport';
+export type { TokenCache, GetTokenResponse, WeComApiError } from './types/wecom-api';
 export { WsTransport } from './transport/ws-transport';
 export { HttpTransport } from './transport/http-transport';
 export { FallbackTransport } from './transport/fallback-transport';

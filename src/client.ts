@@ -30,6 +30,7 @@ import { MessageHandler } from './message-handler';
 import { decryptFile } from './crypto';
 import { DefaultLogger } from './logger';
 import { generateReqId } from './utils';
+import path from 'path';
 
 export class WSClient extends EventEmitter<WSClientEventMap> {
   private options: Required<WSClientOptions>;
@@ -58,11 +59,15 @@ export class WSClient extends EventEmitter<WSClientEventMap> {
 
     this.logger = this.options.logger;
 
-    // 初始化 API 客户端（仅用于文件下载）
+    // 计算 token 缓存文件路径
+    const tokenFilePath = this.options.tokenFilePath ||
+      path.resolve(process.cwd(), '.bot-token.json');
+
+    // 初始化 API 客户端（支持 Open Platform API 调用）
     this.apiClient = new WeComApiClient(this.logger, {
-      corpId: this.options.botId,
+      corpId: this.options.corpId || this.options.botId,
       secret: this.options.secret,
-      tokenFilePath: '',
+      tokenFilePath,
       timeout: this.options.requestTimeout,
     });
 
@@ -163,6 +168,7 @@ export class WSClient extends EventEmitter<WSClientEventMap> {
     this.logger.info('Disconnecting...');
     this.started = false;
     this.wsManager.disconnect();
+    this.apiClient.stop();
     this.logger.info('Disconnected');
   }
 

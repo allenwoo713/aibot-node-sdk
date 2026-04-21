@@ -33,4 +33,10 @@ export interface WSClientOptions {
   maxReplyQueueSize?: number;
   /** 自定义日志函数 */
   logger?: Logger;
+  /** WeCom corp ID（可选，默认使用 botId） */
+  corpId?: string;
+  /** WeCom agent ID（可选，默认使用 botId） */
+  agentId?: string;
+  /** access_token 缓存文件路径（可选，默认使用 cwd 下的 .bot-token.json） */
+  tokenFilePath?: string;
 }
