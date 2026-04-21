@@ -62,7 +62,11 @@ export class HttpTransport extends EventEmitter<TransportEventMap> implements Tr
     this.logger = options.logger ?? new DefaultLogger('HttpTransport');
     this.agentId = options.agentId ?? options.botId;
     const corpId = options.corpId ?? options.botId;
-    this.apiClient = new WeComApiClient(this.logger);
+    this.apiClient = new WeComApiClient(this.logger, {
+      corpId,
+      secret: options.secret,
+      tokenFilePath: '',
+    });
     this.tokenCache = new TokenCache(this.apiClient, corpId, options.secret, this.logger);
   }
 
@@ -79,8 +83,7 @@ export class HttpTransport extends EventEmitter<TransportEventMap> implements Tr
     const touser = body?.from?.userid || '';
     const chatid = body?.chatid;
     const doSend = async () => {
-      const token = await this.tokenCache.getToken();
-      await this.apiClient.sendTextMessage(token, this.agentId, touser, chatid, text);
+      await this.apiClient.sendTextMessage(this.agentId, touser, chatid, text);
     };
     try {
       await doSend();

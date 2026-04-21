@@ -1,28 +1,97 @@
 import axios, { AxiosInstance } from 'axios';
 import type { Logger } from './types';
+import { TokenManager } from './token-manager';
+import type { WeComApiError } from './types/wecom-api';
 
 /**
  * 企业微信 API 客户端
- * 仅负责文件下载等 HTTP 辅助功能，消息收发均走 WebSocket 通道
+ * 支持 WeCom Open Platform API 的通用请求封装，自动处理 access_token 注入与刷新
  */
 export class WeComApiClient {
   private static readonly GET_TOKEN_URL = 'https://qyapi.weixin.qq.com/cgi-bin/gettoken';
-  private static readonly SEND_MSG_URL = 'https://qyapi.weixin.qq.com/cgi-bin/message/send';
+  private static readonly BASE_URL = 'https://qyapi.weixin.qq.com/cgi-bin';
 
   private httpClient: AxiosInstance;
   private logger: Logger;
+  private tokenManager: TokenManager;
 
-  constructor(logger: Logger, timeout: number = 10000) {
+  constructor(
+    logger: Logger,
+    options: {
+      corpId: string;
+      secret: string;
+      tokenFilePath: string;
+      timeout?: number;
+    },
+  ) {
     this.logger = logger;
-
     this.httpClient = axios.create({
-      timeout,
+      timeout: options.timeout ?? 10000,
       headers: {
         'Content-Type': 'application/json',
       },
     });
+    this.tokenManager = new TokenManager({
+      corpId: options.corpId,
+      secret: options.secret,
+      tokenFilePath: options.tokenFilePath,
+      logger: this.logger,
+      httpClient: this.httpClient,
+    });
   }
 
+  /**
+   * Generic WeCom Open Platform API request with automatic token injection.
+   * Retries once on token expiry errors (40001, 40014).
+   */
+  async request<T>(
+    method: 'GET' | 'POST',
+    endpoint: string,
+    params?: Record<string, string | number | boolean | undefined>,
+    data?: unknown,
+  ): Promise<T> {
+    return this.doRequest<T>(method, endpoint, params, data, true);
+  }
+
+  private async doRequest<T>(
+    method: 'GET' | 'POST',
+    endpoint: string,
+    params: Record<string, string | number | boolean | undefined> | undefined,
+    data: unknown | undefined,
+    allowRetry: boolean,
+  ): Promise<T> {
+    // SSRF mitigation: validate endpoint
+    if (!endpoint.startsWith('/') || endpoint.includes('..')) {
+      throw new Error('Invalid endpoint: must start with / and not contain ..');
+    }
+
+    const token = await this.tokenManager.getToken();
+    const url = `${WeComApiClient.BASE_URL}${endpoint}`;
+
+    const response = await this.httpClient.request({
+      method,
+      url,
+      params: { ...params, access_token: token },
+      data,
+    });
+
+    const body = response.data as T & WeComApiError;
+    if (body.errcode !== 0) {
+      if ((body.errcode === 40014 || body.errcode === 40001) && allowRetry) {
+        this.logger.info('Token error %d, refreshing and retrying once', body.errcode);
+        await this.tokenManager.forceRefresh();
+        return this.doRequest<T>(method, endpoint, params, data, false);
+      }
+      throw new Error(`WeCom API error: ${body.errmsg} (${body.errcode})`);
+    }
+
+    return body as T;
+  }
+
+  /**
+   * 获取 access_token（用于 WebSocket 认证等独立场景）。
+   * 此方法直接调用 gettoken 接口，不共享 Open Platform TokenManager 缓存。
+   */
   async getAccessToken(corpid: string, corpsecret: string): Promise<{ access_token: string; expires_in: number }> {
     const { data } = await this.httpClient.get(WeComApiClient.GET_TOKEN_URL, {
       params: { corpid, corpsecret },
@@ -33,8 +102,11 @@ export class WeComApiClient {
     return { access_token: data.access_token, expires_in: data.expires_in };
   }
 
-  async sendTextMessage(token: string, agentid: string, touser: string, chatid: string | undefined, content: string): Promise<void> {
-    const payload: any = {
+  /**
+   * 发送文本消息
+   */
+  async sendTextMessage(agentid: string, touser: string, chatid: string | undefined, content: string): Promise<void> {
+    const payload: Record<string, unknown> = {
       msgtype: 'text',
       agentid,
       text: { content },
@@ -42,12 +114,7 @@ export class WeComApiClient {
     };
     if (touser) payload.touser = touser;
     if (chatid) payload.chatid = chatid;
-    const { data } = await this.httpClient.post(WeComApiClient.SEND_MSG_URL, payload, {
-      params: { access_token: token },
-    });
-    if (data.errcode !== 0) {
-      throw new Error(`send failed: ${data.errmsg} (${data.errcode})`);
-    }
+    await this.request<void>('POST', '/message/send', undefined, payload);
   }
 
   /**
@@ -84,5 +151,13 @@ export class WeComApiClient {
       this.logger.error('File download failed:', error.message);
       throw error;
     }
+  }
+
+  /**
+   * Stops the token refresh timer to prevent leaks on destruction.
+   */
+  stop(): void {
+    this.tokenManager.stop();
+    this.logger.debug('WeComApiClient: stopped');
   }
 }

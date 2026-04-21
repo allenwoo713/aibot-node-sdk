@@ -59,10 +59,12 @@ export class WSClient extends EventEmitter<WSClientEventMap> {
     this.logger = this.options.logger;
 
     // 初始化 API 客户端（仅用于文件下载）
-    this.apiClient = new WeComApiClient(
-      this.logger,
-      this.options.requestTimeout,
-    );
+    this.apiClient = new WeComApiClient(this.logger, {
+      corpId: this.options.botId,
+      secret: this.options.secret,
+      tokenFilePath: '',
+      timeout: this.options.requestTimeout,
+    });
 
     // 初始化 WebSocket 管理器
     this.wsManager = new WsConnectionManager(
