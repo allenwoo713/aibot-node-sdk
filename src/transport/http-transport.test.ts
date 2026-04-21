@@ -66,35 +66,27 @@ describe('HttpTransport', () => {
     vi.restoreAllMocks();
   });
 
-  it('sendText uses cached token', async () => {
-    vi.mocked(mockApi.getAccessToken).mockResolvedValue({ access_token: 'tok-1', expires_in: 7200 });
-
+  it('sendText delegates to sendTextMessage without token', async () => {
     const frame = createMockFrame();
     await transport.sendText(frame, 'hello');
     await transport.sendText(frame, 'hello again');
 
-    expect(mockApi.getAccessToken).toHaveBeenCalledTimes(1);
     expect(mockApi.sendTextMessage).toHaveBeenCalledTimes(2);
-    expect(mockApi.sendTextMessage).toHaveBeenNthCalledWith(1, 'tok-1', 'agent-1', 'user-1', undefined, 'hello');
-    expect(mockApi.sendTextMessage).toHaveBeenNthCalledWith(2, 'tok-1', 'agent-1', 'user-1', undefined, 'hello again');
+    expect(mockApi.sendTextMessage).toHaveBeenNthCalledWith(1, 'agent-1', 'user-1', undefined, 'hello');
+    expect(mockApi.sendTextMessage).toHaveBeenNthCalledWith(2, 'agent-1', 'user-1', undefined, 'hello again');
   });
 
   it('sendText retries once on 42001', async () => {
-    vi.mocked(mockApi.getAccessToken)
-      .mockResolvedValueOnce({ access_token: 'expired', expires_in: 7200 })
-      .mockResolvedValueOnce({ access_token: 'fresh', expires_in: 7200 });
-
     vi.mocked(mockApi.sendTextMessage)
-      .mockRejectedValueOnce(new Error('send failed: token expired (42001)'))
+      .mockRejectedValueOnce(new Error('WeCom API error: token expired (42001)'))
       .mockResolvedValueOnce(undefined);
 
     const frame = createMockFrame();
     await expect(transport.sendText(frame, 'hello')).resolves.toBeUndefined();
 
-    expect(mockApi.getAccessToken).toHaveBeenCalledTimes(2);
     expect(mockApi.sendTextMessage).toHaveBeenCalledTimes(2);
-    expect(mockApi.sendTextMessage).toHaveBeenNthCalledWith(1, 'expired', 'agent-1', 'user-1', undefined, 'hello');
-    expect(mockApi.sendTextMessage).toHaveBeenNthCalledWith(2, 'fresh', 'agent-1', 'user-1', undefined, 'hello');
+    expect(mockApi.sendTextMessage).toHaveBeenNthCalledWith(1, 'agent-1', 'user-1', undefined, 'hello');
+    expect(mockApi.sendTextMessage).toHaveBeenNthCalledWith(2, 'agent-1', 'user-1', undefined, 'hello');
   });
 
   it('sendStream buffers and sends on finish', async () => {
@@ -106,6 +98,6 @@ describe('HttpTransport', () => {
 
     await transport.sendStream(frame, 'sid-1', 'part2', true);
     expect(mockApi.sendTextMessage).toHaveBeenCalledTimes(1);
-    expect(mockApi.sendTextMessage).toHaveBeenCalledWith('tok-1', 'agent-1', 'user-1', undefined, 'part1part2');
+    expect(mockApi.sendTextMessage).toHaveBeenCalledWith('agent-1', 'user-1', undefined, 'part1part2');
   });
 });

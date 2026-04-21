@@ -133,7 +133,6 @@ describe('Bot Fallback E2E', () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect((httpTransport as any).apiClient.sendTextMessage).toHaveBeenCalledWith(
-      'tok-fb',
       'agent-fb',
       'user-fb',
       undefined,
