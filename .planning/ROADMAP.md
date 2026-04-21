@@ -11,7 +11,7 @@
 
 ## Phases
 
-- [ ] **Phase 7: WeCom API Client Foundation** — SDK obtains, caches, and auto-refreshes access_token; exposed in public API
+- [x] **Phase 7: WeCom API Client Foundation** — SDK obtains, caches, and auto-refreshes access_token; exposed in public API
 - [ ] **Phase 8: Docker Compose Deployment** — One-command local deployment with health checks and persistent data volumes
 - [ ] **Phase 9: Document Reading Integration** — Bot handles `/文档` command to download, analyze, and summarize WeCom micro-documents
 - [ ] **Phase 10: Schedule Management Integration** — Bot handles `/日程 创建` and `/日程 列表` commands with attendee mapping
@@ -87,7 +87,7 @@
 | 4. AI API Validation & Reliability | v1.1 | 3/3 | Complete | 2026-04-19 |
 | 5. Persistent Conversation Storage | v1.1 | 3/3 | Complete | 2026-04-19 |
 | 6. Integration & Deployment | v1.1 | 2/2 | Complete | 2026-04-20 |
-| 7. WeCom API Client Foundation | v1.2 | 1/2 | In Progress | 2026-04-21 |
+| 7. WeCom API Client Foundation | v1.2 | 2/2 | Complete | 2026-04-21 |
 | 8. Docker Compose Deployment | v1.2 | 0/TBD | Not started | - |
 | 9. Document Reading Integration | v1.2 | 0/TBD | Not started | - |
 | 10. Schedule Management Integration | v1.2 | 0/TBD | Not started | - |

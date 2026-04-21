@@ -18,8 +18,8 @@
 
 - [ ] **WECOM-01**: SDK obtains and caches `access_token` using `corpId` + `secret` from BotConfig
 - [ ] **WECOM-02**: `access_token` is automatically refreshed before expiry without manual intervention
-- [ ] **WECOM-03**: API client handles common error codes (40014 token expired, 40001 token invalid) with retry
-- [ ] **WECOM-04**: API client is exposed in SDK public exports for advanced consumers
+- [x] **WECOM-03**: API client handles common error codes (40014 token expired, 40001 token invalid) with retry
+- [x] **WECOM-04**: API client is exposed in SDK public exports for advanced consumers
 
 ### DOC — Document Reading
 
@@ -75,8 +75,8 @@
 |-------------|-------|------|--------|
 | WECOM-01 | 7 | 07-01 | Complete |
 | WECOM-02 | 7 | 07-01 | Complete |
-| WECOM-03 | 7 | — | Pending |
-| WECOM-04 | 7 | — | Pending |
+| WECOM-03 | 7 | 07-02 | Complete |
+| WECOM-04 | 7 | 07-02 | Complete |
 | DOCKER-01 | 8 | — | Pending |
 | DOCKER-02 | 8 | — | Pending |
 | DOCKER-03 | 8 | — | Pending |
@@ -99,4 +99,4 @@
 | TEST-04 | 11 | — | Pending |
 
 ---
-*Last updated: 2026-04-20*
+*Last updated: 2026-04-21*
