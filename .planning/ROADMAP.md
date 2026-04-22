@@ -30,7 +30,7 @@
   2. API client automatically obtains and caches `access_token` on first use without manual intervention
   3. API client transparently refreshes `access_token` before expiry without failing the original request
   4. Token expired/invalid errors (40014, 40001) trigger automatic retry with a fresh token, succeeding on retry
-**Plans**: TBD
+**Plans**: 2 plans (07-01, 07-02) — Complete
 
 ### Phase 8: Docker Compose Deployment
 **Goal**: Developers can deploy the bot service locally with a single command, health monitoring, and persistent conversation data.
@@ -41,7 +41,10 @@
   2. Container health check reports healthy when the bot service is running and responsive
   3. Conversation persistence data survives `docker compose down` followed by `docker compose up` via named volume
   4. Environment variables are loaded from `.env` file without manual `export`
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 08-01-PLAN.md — HealthServer implementation (`src/health.ts`, `src/health.test.ts`)
+- [ ] 08-02-PLAN.md — Bot integration and Compose configuration (`src/bot/index.ts`, `src/bot/entry.ts`, `compose.yml`)
+- [ ] 08-03-PLAN.md — Dockerfile health check and gitignore (`Dockerfile`, `.gitignore`)
 
 ### Phase 9: Document Reading Integration
 **Goal**: Users can ask the bot to analyze WeCom micro-documents via a simple chat command.
@@ -88,7 +91,7 @@
 | 5. Persistent Conversation Storage | v1.1 | 3/3 | Complete | 2026-04-19 |
 | 6. Integration & Deployment | v1.1 | 2/2 | Complete | 2026-04-20 |
 | 7. WeCom API Client Foundation | v1.2 | 2/2 | Complete | 2026-04-21 |
-| 8. Docker Compose Deployment | v1.2 | 0/TBD | Not started | - |
+| 8. Docker Compose Deployment | v1.2 | 0/3 | Planning complete | - |
 | 9. Document Reading Integration | v1.2 | 0/TBD | Not started | - |
 | 10. Schedule Management Integration | v1.2 | 0/TBD | Not started | - |
 | 11. Testing & Integration | v1.2 | 0/TBD | Not started | - |
@@ -129,4 +132,4 @@
 
 ---
 
-*Last updated: 2026-04-20*
+*Last updated: 2026-04-22*
