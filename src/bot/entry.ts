@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { loadConfig } from '../config';
 import { BotOrchestrator } from '.';
 import { WsTransport, HttpTransport, FallbackTransport } from '../transport';
+import { HealthServer } from '../health';
 
 const config = loadConfig();
 
@@ -24,9 +25,13 @@ export const bot = new BotOrchestrator(config, transport);
 
 bot.start();
 
+const healthServer = new HealthServer(() => bot.isHealthy());
+healthServer.start(3000);
+
 async function gracefulShutdown(signal: string) {
   console.log(`\nReceived ${signal}, shutting down bot...`);
   await bot.stop();
+  await healthServer.stop();
   process.exit(0);
 }
 
