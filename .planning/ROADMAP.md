@@ -56,7 +56,10 @@
   3. Bot passes downloaded document content to Claude and replies with a structured summary or answers specific questions
   4. Bot provides a helpful error message when the document name is missing, invalid, or the document is not found
   5. Command handling preserves existing rate limiting and conversation memory behavior
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 09-01-PLAN.md — WeCom API client extension for document reading (`src/types/wecom-api.ts`, `src/api.ts`)
+- [ ] 09-02-PLAN.md — Command router and bot integration (`src/bot/commands/index.ts`, `src/bot/index.ts`)
+- [ ] 09-03-PLAN.md — Tests (`src/bot/commands/index.test.ts`, `src/bot/index.test.ts`)
 
 ### Phase 10: Schedule Management Integration
 **Goal**: Users can create and query WeCom schedules via natural-language bot commands.
@@ -92,7 +95,7 @@
 | 6. Integration & Deployment | v1.1 | 2/2 | Complete | 2026-04-20 |
 | 7. WeCom API Client Foundation | v1.2 | 2/2 | Complete | 2026-04-21 |
 | 8. Docker Compose Deployment | v1.2 | 3/3 | Complete | 2026-04-22 |
-| 9. Document Reading Integration | v1.2 | 0/TBD | Not started | - |
+| 9. Document Reading Integration | v1.2 | 0/3 | Not started | - |
 | 10. Schedule Management Integration | v1.2 | 0/TBD | Not started | - |
 | 11. Testing & Integration | v1.2 | 0/TBD | Not started | - |
 
