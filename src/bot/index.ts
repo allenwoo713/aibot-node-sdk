@@ -2,6 +2,7 @@ import { generateReqId } from '..';
 import type { Transport } from '../transport';
 import { WsTransport } from '../transport';
 import type { WsFrame, TextMessage } from '../types';
+import { WSAuthFailureError, WSReconnectExhaustedError } from '../types';
 import type { BotConfig } from '../config';
 import { ConversationStore } from '../memory';
 import { AnthropicApiAdapter } from '../ai/api-adapter';
@@ -21,6 +22,7 @@ export class BotOrchestrator {
   private config: BotConfig;
   private logger: Logger;
   private rateLimits = new Map<string, RateLimitEntry>();
+  private _fatalError = false;
 
   constructor(config: BotConfig, transport?: Transport) {
     this.config = config;
@@ -45,6 +47,10 @@ export class BotOrchestrator {
     this.transport.stop();
   }
 
+  isHealthy(): boolean {
+    return !this._fatalError;
+  }
+
   private setupEventHandlers(): void {
     this.transport.on('message.text', async (frame: WsFrame<TextMessage>) => {
       try {
@@ -56,6 +62,9 @@ export class BotOrchestrator {
 
     this.transport.on('error', (err) => {
       console.error('Transport error:', err.message);
+      if (err instanceof WSAuthFailureError || err instanceof WSReconnectExhaustedError) {
+        this._fatalError = true;
+      }
     });
   }
 
