@@ -12,7 +12,7 @@
 ## Phases
 
 - [x] **Phase 7: WeCom API Client Foundation** — SDK obtains, caches, and auto-refreshes access_token; exposed in public API
-- [ ] **Phase 8: Docker Compose Deployment** — One-command local deployment with health checks and persistent data volumes
+- [x] **Phase 8: Docker Compose Deployment** — One-command local deployment with health checks and persistent data volumes
 - [ ] **Phase 9: Document Reading Integration** — Bot handles `/文档` command to download, analyze, and summarize WeCom micro-documents
 - [ ] **Phase 10: Schedule Management Integration** — Bot handles `/日程 创建` and `/日程 列表` commands with attendee mapping
 - [ ] **Phase 11: Testing & Integration** — Unit and integration tests cover all new v1.2 features
@@ -41,10 +41,10 @@
   2. Container health check reports healthy when the bot service is running and responsive
   3. Conversation persistence data survives `docker compose down` followed by `docker compose up` via named volume
   4. Environment variables are loaded from `.env` file without manual `export`
-**Plans**: 3 plans
-- [ ] 08-01-PLAN.md — HealthServer implementation (`src/health.ts`, `src/health.test.ts`)
-- [ ] 08-02-PLAN.md — Bot integration and Compose configuration (`src/bot/index.ts`, `src/bot/entry.ts`, `compose.yml`)
-- [ ] 08-03-PLAN.md — Dockerfile health check and gitignore (`Dockerfile`, `.gitignore`)
+**Plans**: 3 plans — Complete
+- [x] 08-01-PLAN.md — HealthServer implementation (`src/health.ts`, `src/health.test.ts`)
+- [x] 08-02-PLAN.md — Bot integration and Compose configuration (`src/bot/index.ts`, `src/bot/entry.ts`, `compose.yml`)
+- [x] 08-03-PLAN.md — Dockerfile health check and gitignore (`Dockerfile`, `.gitignore`)
 
 ### Phase 9: Document Reading Integration
 **Goal**: Users can ask the bot to analyze WeCom micro-documents via a simple chat command.
@@ -91,7 +91,7 @@
 | 5. Persistent Conversation Storage | v1.1 | 3/3 | Complete | 2026-04-19 |
 | 6. Integration & Deployment | v1.1 | 2/2 | Complete | 2026-04-20 |
 | 7. WeCom API Client Foundation | v1.2 | 2/2 | Complete | 2026-04-21 |
-| 8. Docker Compose Deployment | v1.2 | 0/3 | Planning complete | - |
+| 8. Docker Compose Deployment | v1.2 | 3/3 | Complete | 2026-04-22 |
 | 9. Document Reading Integration | v1.2 | 0/TBD | Not started | - |
 | 10. Schedule Management Integration | v1.2 | 0/TBD | Not started | - |
 | 11. Testing & Integration | v1.2 | 0/TBD | Not started | - |
