@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import type { Logger } from './types';
 import { TokenManager } from './token-manager';
-import type { WeComApiError } from './types/wecom-api';
+import type { WeComApiError, GetDocContentResponse } from './types/wecom-api';
 
 /**
  * 企业微信 API 客户端
@@ -151,6 +151,49 @@ export class WeComApiClient {
       this.logger.error('File download failed:', error.message);
       throw error;
     }
+  }
+
+  /**
+   * 获取文档内容（Markdown 格式）
+   * 自动处理异步轮询：首次调用返回 task_id，后续轮询直到 task_done 为 true。
+   *
+   * @param docidOrUrl 文档 docid 或分享链接 URL
+   * @param options.maxPolls 最大轮询次数（默认 10）
+   * @param options.pollIntervalMs 轮询间隔毫秒（默认 1000）
+   * @returns 文档 Markdown 内容
+   */
+  async getDocContent(
+    docidOrUrl: string,
+    options?: { maxPolls?: number; pollIntervalMs?: number },
+  ): Promise<string> {
+    const { maxPolls = 10, pollIntervalMs = 1000 } = options ?? {};
+    const isUrl = docidOrUrl.startsWith('http://') || docidOrUrl.startsWith('https://');
+    const bodyBase: Record<string, unknown> = { type: 2 };
+    if (isUrl) {
+      bodyBase.url = docidOrUrl;
+    } else {
+      bodyBase.docid = docidOrUrl;
+    }
+
+    let taskId: string | undefined;
+
+    for (let i = 0; i < maxPolls; i++) {
+      const body = taskId ? { ...bodyBase, task_id: taskId } : bodyBase;
+      const resp = await this.request<GetDocContentResponse>('POST', '/doc/get_doc_content', undefined, body);
+
+      if (resp.task_done) {
+        return resp.content ?? '';
+      }
+
+      taskId = resp.task_id;
+      if (!taskId) {
+        throw new Error('WeCom API returned empty task_id for get_doc_content');
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    }
+
+    throw new Error('Document content polling timed out');
   }
 
   /**
