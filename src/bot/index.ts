@@ -1,3 +1,4 @@
+import path from 'path';
 import { generateReqId } from '..';
 import type { Transport } from '../transport';
 import { WsTransport } from '../transport';
@@ -9,6 +10,8 @@ import { AnthropicApiAdapter } from '../ai/api-adapter';
 import { chunkMessage } from '../chunker';
 import { DefaultLogger } from '../logger';
 import type { Logger } from '../types';
+import { WeComApiClient } from '../api';
+import { parseCommand, handleDocumentCommand } from './commands';
 
 interface RateLimitEntry {
   count: number;
@@ -22,6 +25,7 @@ export class BotOrchestrator {
   private config: BotConfig;
   private logger: Logger;
   private rateLimits = new Map<string, RateLimitEntry>();
+  private apiClient: WeComApiClient;
   private _fatalError = false;
 
   constructor(config: BotConfig, transport?: Transport) {
@@ -34,6 +38,11 @@ export class BotOrchestrator {
     });
     this.store = new ConversationStore({ ...config, logger: this.logger });
     this.adapter = new AnthropicApiAdapter(config);
+    this.apiClient = new WeComApiClient(this.logger, {
+      corpId: config.corpId || config.botId,
+      secret: config.secret,
+      tokenFilePath: path.resolve(path.dirname(config.persistencePath), 'wecom-access-token.json'),
+    });
 
     this.setupEventHandlers();
   }
@@ -44,6 +53,7 @@ export class BotOrchestrator {
 
   async stop(): Promise<void> {
     await this.store.close();
+    this.apiClient.stop();
     this.transport.stop();
   }
 
@@ -86,6 +96,30 @@ export class BotOrchestrator {
     // Rate limiting
     if (this.isRateLimited(conversationId)) {
       await this.sendText(frame, '请求太多了，请稍后再试。');
+      return;
+    }
+
+    // Command interception
+    const command = parseCommand(content);
+    if (command && command.type === 'document') {
+      const contactType = this.detectContactType(frame);
+      const reply = await handleDocumentCommand(
+        command.arg,
+        this.apiClient,
+        this.adapter,
+        contactType,
+        this.config,
+        this.logger,
+      );
+      const chunks = chunkMessage(reply);
+      if (chunks.length === 0) {
+        return;
+      }
+      const streamId = generateReqId('stream');
+      for (let i = 0; i < chunks.length; i++) {
+        const finish = i === chunks.length - 1;
+        await this.transport.sendStream(frame, streamId, chunks[i], finish);
+      }
       return;
     }
 
