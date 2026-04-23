@@ -20,8 +20,12 @@ export function parseCommand(content: string): ParsedCommand | null {
   if (!trimmed.startsWith(COMMAND_PREFIX)) {
     return null;
   }
-  // Must have a space after the prefix and a non-empty argument
   const afterPrefix = trimmed.slice(COMMAND_PREFIX.length);
+  // Exact match "/文档" with no suffix → missing argument
+  if (afterPrefix === '') {
+    return { type: 'document', arg: '' };
+  }
+  // Must have a space after the prefix (prevents matching "/文档列表")
   if (!afterPrefix.startsWith(' ')) {
     return null;
   }

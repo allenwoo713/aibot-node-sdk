@@ -53,7 +53,7 @@ export class BotOrchestrator {
 
   async stop(): Promise<void> {
     await this.store.close();
-    this.apiClient.stop();
+    this.apiClient.stop?.();
     this.transport.stop();
   }
 

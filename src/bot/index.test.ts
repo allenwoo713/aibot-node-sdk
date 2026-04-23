@@ -239,4 +239,57 @@ describe('BotOrchestrator', () => {
     await bot.stop();
     expect(storeCloseSpy).toHaveBeenCalled();
   });
+
+  describe('document commands', () => {
+    it('intercepts /文档 command and does not call AI adapter', async () => {
+      chatMock.mockResolvedValueOnce({ content: 'should not reach' });
+
+      const bot = createBot();
+      const frame = createMockFrame({ text: { content: '/文档 doc_123' } });
+      (bot as any).transport.emit('message.text', frame);
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      // AI adapter should NOT be called for commands
+      expect(chatMock).not.toHaveBeenCalled();
+    });
+
+    it('applies rate limiting to /文档 commands', async () => {
+      chatMock.mockResolvedValue({ content: 'should not reach' });
+
+      const bot = createBot();
+      const frame = createMockFrame({ text: { content: '/文档 doc_123' } });
+
+      // 1st command
+      (bot as any).transport.emit('message.text', frame);
+      await new Promise((r) => setTimeout(r, 20));
+      // 2nd command
+      (bot as any).transport.emit('message.text', frame);
+      await new Promise((r) => setTimeout(r, 20));
+      // 3rd command — should be rate limited
+      (bot as any).transport.emit('message.text', frame);
+      await new Promise((r) => setTimeout(r, 20));
+
+      expect(chatMock).not.toHaveBeenCalled();
+      const transport = (bot as any).transport;
+      const rateLimitCalls = (transport.sendText as any).mock.calls.filter(
+        (c: any[]) => c[1] === '请求太多了，请稍后再试。',
+      );
+      expect(rateLimitCalls.length).toBe(1);
+    });
+
+    it('falls back to normal AI chat for non-command messages', async () => {
+      chatMock.mockResolvedValueOnce({ content: 'AI reply' });
+
+      const bot = createBot();
+      const frame = createMockFrame({ text: { content: 'Hello bot' } });
+      (bot as any).transport.emit('message.text', frame);
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(chatMock).toHaveBeenCalledTimes(1);
+      const transport = (bot as any).transport;
+      expect(transport.sendStream).toHaveBeenCalledWith(frame, 'stream-123', 'AI reply', true);
+    });
+  });
 });
