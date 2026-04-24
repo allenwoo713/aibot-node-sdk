@@ -362,4 +362,95 @@ describe('WeComApiClient', () => {
       text: { content: 'hello' },
     }));
   });
+
+  it('createSchedule sends correct payload and returns schedule_id', async () => {
+    mockHttpClient.get.mockResolvedValueOnce({
+      data: { errcode: 0, access_token: 'tok1', expires_in: 7200 },
+    });
+    mockHttpClient.request.mockResolvedValueOnce({
+      data: { errcode: 0, schedule_id: 'sched-123' },
+    });
+
+    const scheduleData = {
+      organizer: 'user-1',
+      start_time: 1714020000,
+      end_time: 1714023600,
+      summary: '团队周会',
+      attendees: [{ userid: 'user-1' }],
+    };
+
+    const result = await client.createSchedule(scheduleData);
+    expect(result.errcode).toBe(0);
+    expect(result.schedule_id).toBe('sched-123');
+
+    const reqCall = mockHttpClient.request.mock.calls[0][0];
+    expect(reqCall.method).toBe('POST');
+    expect(reqCall.url).toContain('/oa/schedule/add');
+    expect(reqCall.data).toEqual({ schedule: scheduleData });
+  });
+
+  it('getSchedule returns schedule data', async () => {
+    mockHttpClient.get.mockResolvedValueOnce({
+      data: { errcode: 0, access_token: 'tok1', expires_in: 7200 },
+    });
+    mockHttpClient.request.mockResolvedValueOnce({
+      data: {
+        errcode: 0,
+        schedule: {
+          schedule_id: 'sched-123',
+          organizer: 'user-1',
+          summary: '团队周会',
+          start_time: 1714020000,
+          end_time: 1714023600,
+        },
+      },
+    });
+
+    const result = await client.getSchedule('sched-123');
+    expect(result.errcode).toBe(0);
+    expect(result.schedule?.summary).toBe('团队周会');
+
+    const reqCall = mockHttpClient.request.mock.calls[0][0];
+    expect(reqCall.method).toBe('POST');
+    expect(reqCall.url).toContain('/oa/schedule/get');
+    expect(reqCall.data).toEqual({ schedule_id: 'sched-123' });
+  });
+
+  it('getDocContent polls until task_done', async () => {
+    mockHttpClient.get.mockResolvedValueOnce({
+      data: { errcode: 0, access_token: 'tok1', expires_in: 7200 },
+    });
+    mockHttpClient.request
+      .mockResolvedValueOnce({
+        data: { errcode: 0, task_done: false, task_id: 'task-1' },
+      })
+      .mockResolvedValueOnce({
+        data: { errcode: 0, task_done: true, content: '# Test Doc\nContent' },
+      });
+
+    const result = await client.getDocContent('doc-123', { pollIntervalMs: 10 });
+    expect(result).toBe('# Test Doc\nContent');
+    expect(mockHttpClient.request).toHaveBeenCalledTimes(2);
+
+    const firstCall = mockHttpClient.request.mock.calls[0][0];
+    expect(firstCall.data).toEqual(expect.objectContaining({ docid: 'doc-123', type: 2 }));
+
+    const secondCall = mockHttpClient.request.mock.calls[1][0];
+    expect(secondCall.data).toEqual(expect.objectContaining({ docid: 'doc-123', type: 2, task_id: 'task-1' }));
+  });
+
+  it('getDocContent with URL uses url field', async () => {
+    mockHttpClient.get.mockResolvedValueOnce({
+      data: { errcode: 0, access_token: 'tok1', expires_in: 7200 },
+    });
+    mockHttpClient.request.mockResolvedValueOnce({
+      data: { errcode: 0, task_done: true, content: 'URL doc' },
+    });
+
+    const result = await client.getDocContent('https://doc.weixin.qq.com/d/xxx', { pollIntervalMs: 10 });
+    expect(result).toBe('URL doc');
+
+    const reqCall = mockHttpClient.request.mock.calls[0][0];
+    expect(reqCall.data).toEqual(expect.objectContaining({ url: 'https://doc.weixin.qq.com/d/xxx', type: 2 }));
+  });
 });
