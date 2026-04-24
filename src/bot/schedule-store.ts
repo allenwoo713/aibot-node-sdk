@@ -35,6 +35,10 @@ export class ScheduleStore {
 
   private save(): void {
     try {
+      const dir = path.dirname(this.filePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
       fs.writeFileSync(this.filePath, JSON.stringify(this.entries, null, 2), 'utf-8');
     } catch (err: any) {
       this.logger.warn('Failed to save schedules', { error: err?.message });

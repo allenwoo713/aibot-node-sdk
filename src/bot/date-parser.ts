@@ -24,22 +24,22 @@ function parseBaseDate(desc: string): Date | null {
     return now;
   }
 
-  const nextWeekMatch = desc.match(/下周([一二三四五六日])/);
-  if (nextWeekMatch) {
-    const targetDay = WEEKDAY_MAP[nextWeekMatch[1]];
-    if (targetDay !== undefined) {
-      const daysUntilTarget = (targetDay + 7 - now.getDay()) % 7 || 7;
-      now.setDate(now.getDate() + daysUntilTarget);
-      return now;
-    }
-  }
-
   const nextNextWeekMatch = desc.match(/下下周([一二三四五六日])/);
   if (nextNextWeekMatch) {
     const targetDay = WEEKDAY_MAP[nextNextWeekMatch[1]];
     if (targetDay !== undefined) {
       const daysUntilTarget = (targetDay + 7 - now.getDay()) % 7 || 7;
       now.setDate(now.getDate() + daysUntilTarget + 7);
+      return now;
+    }
+  }
+
+  const nextWeekMatch = desc.match(/下周([一二三四五六日])/);
+  if (nextWeekMatch) {
+    const targetDay = WEEKDAY_MAP[nextWeekMatch[1]];
+    if (targetDay !== undefined) {
+      const daysUntilTarget = (targetDay + 7 - now.getDay()) % 7 || 7;
+      now.setDate(now.getDate() + daysUntilTarget);
       return now;
     }
   }

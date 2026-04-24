@@ -292,4 +292,71 @@ describe('BotOrchestrator', () => {
       expect(transport.sendStream).toHaveBeenCalledWith(frame, 'stream-123', 'AI reply', true);
     });
   });
+
+  describe('schedule commands', () => {
+    it('intercepts /日程 列表 command and does not call AI adapter', async () => {
+      chatMock.mockResolvedValueOnce({ content: 'should not reach' });
+
+      const bot = createBot();
+      (bot as any).scheduleStore.listUpcoming = vi.fn().mockReturnValue([
+        { schedule_id: 's1', summary: '周会', start_time: Math.floor(Date.now() / 1000) + 3600 },
+      ]);
+
+      const frame = createMockFrame({ text: { content: '/日程 列表' } });
+      (bot as any).transport.emit('message.text', frame);
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(chatMock).not.toHaveBeenCalled();
+      const transport = (bot as any).transport;
+      expect(transport.sendStream).toHaveBeenCalled();
+      const call = transport.sendStream.mock.calls[0];
+      expect(call[2]).toContain('周会');
+    });
+
+    it('intercepts /日程 创建 command and does not call AI adapter', async () => {
+      chatMock.mockResolvedValueOnce({ content: 'should not reach' });
+
+      const bot = createBot();
+      (bot as any).apiClient.createSchedule = vi.fn().mockResolvedValue({ errcode: 0, schedule_id: 'sched-123' });
+      (bot as any).scheduleStore.add = vi.fn().mockResolvedValue(undefined);
+
+      const frame = createMockFrame({ text: { content: '/日程 创建 明天下午3点团队周会' } });
+      (bot as any).transport.emit('message.text', frame);
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(chatMock).not.toHaveBeenCalled();
+      const transport = (bot as any).transport;
+      expect(transport.sendStream).toHaveBeenCalled();
+      const call = transport.sendStream.mock.calls[0];
+      expect(call[2]).toContain('已创建日程');
+    });
+
+    it('applies rate limiting to /日程 commands', async () => {
+      chatMock.mockResolvedValue({ content: 'should not reach' });
+
+      const bot = createBot();
+      (bot as any).scheduleStore.listUpcoming = vi.fn().mockReturnValue([]);
+
+      const frame = createMockFrame({ text: { content: '/日程 列表' } });
+
+      // 1st command
+      (bot as any).transport.emit('message.text', frame);
+      await new Promise((r) => setTimeout(r, 20));
+      // 2nd command
+      (bot as any).transport.emit('message.text', frame);
+      await new Promise((r) => setTimeout(r, 20));
+      // 3rd command — should be rate limited
+      (bot as any).transport.emit('message.text', frame);
+      await new Promise((r) => setTimeout(r, 20));
+
+      expect(chatMock).not.toHaveBeenCalled();
+      const transport = (bot as any).transport;
+      const rateLimitCalls = (transport.sendText as any).mock.calls.filter(
+        (c: any[]) => c[1] === '请求太多了，请稍后再试。',
+      );
+      expect(rateLimitCalls.length).toBe(1);
+    });
+  });
 });
