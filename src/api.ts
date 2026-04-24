@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import type { Logger } from './types';
 import { TokenManager } from './token-manager';
-import type { WeComApiError, GetDocContentResponse } from './types/wecom-api';
+import type { WeComApiError, GetDocContentResponse, CreateScheduleRequest, CreateScheduleResponse, GetScheduleRequest, GetScheduleResponse, ScheduleData } from './types/wecom-api';
 
 /**
  * 企业微信 API 客户端
@@ -194,6 +194,20 @@ export class WeComApiClient {
     }
 
     throw new Error('Document content polling timed out');
+  }
+
+  /**
+   * 创建日程
+   */
+  async createSchedule(scheduleData: ScheduleData): Promise<CreateScheduleResponse> {
+    return this.request<CreateScheduleResponse>('POST', '/oa/schedule/add', undefined, { schedule: scheduleData });
+  }
+
+  /**
+   * 获取日程详情
+   */
+  async getSchedule(scheduleId: string): Promise<GetScheduleResponse> {
+    return this.request<GetScheduleResponse>('POST', '/oa/schedule/get', undefined, { schedule_id: scheduleId });
   }
 
   /**
