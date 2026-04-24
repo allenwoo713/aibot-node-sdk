@@ -33,3 +33,42 @@ export interface GetDocContentResponse {
   /** Document content in Markdown format (only when task_done is true) */
   content?: string;
 }
+
+/** Schedule attendee */
+export interface ScheduleAttendee {
+  userid: string;
+}
+
+/** Schedule data for create/get operations */
+export interface ScheduleData {
+  organizer: string;
+  start_time: number;
+  end_time: number;
+  attendees?: ScheduleAttendee[];
+  summary: string;
+  description?: string;
+  is_remind?: number;
+  remind_before_event_secs?: number;
+  location?: string;
+  cal_id?: string;
+}
+
+/** Request body for POST /oa/schedule/add */
+export interface CreateScheduleRequest {
+  schedule: ScheduleData;
+}
+
+/** Response from POST /oa/schedule/add */
+export interface CreateScheduleResponse extends WeComApiError {
+  schedule_id?: string;
+}
+
+/** Request body for POST /oa/schedule/get */
+export interface GetScheduleRequest {
+  schedule_id: string;
+}
+
+/** Response from POST /oa/schedule/get */
+export interface GetScheduleResponse extends WeComApiError {
+  schedule?: ScheduleData & { schedule_id: string };
+}
