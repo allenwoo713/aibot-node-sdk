@@ -11,7 +11,8 @@ import { chunkMessage } from '../chunker';
 import { DefaultLogger } from '../logger';
 import type { Logger } from '../types';
 import { WeComApiClient } from '../api';
-import { parseCommand, handleDocumentCommand } from './commands';
+import { parseCommand, handleCommand } from './commands';
+import { ScheduleStore } from './schedule-store';
 
 interface RateLimitEntry {
   count: number;
@@ -26,6 +27,7 @@ export class BotOrchestrator {
   private logger: Logger;
   private rateLimits = new Map<string, RateLimitEntry>();
   private apiClient: WeComApiClient;
+  private scheduleStore: ScheduleStore;
   private _fatalError = false;
 
   constructor(config: BotConfig, transport?: Transport) {
@@ -42,6 +44,10 @@ export class BotOrchestrator {
       corpId: config.corpId || config.botId,
       secret: config.secret,
       tokenFilePath: path.resolve(path.dirname(config.persistencePath), 'wecom-access-token.json'),
+    });
+    this.scheduleStore = new ScheduleStore({
+      persistencePath: config.persistencePath,
+      logger: this.logger,
     });
 
     this.setupEventHandlers();
@@ -101,13 +107,15 @@ export class BotOrchestrator {
 
     // Command interception
     const command = parseCommand(content);
-    if (command && command.type === 'document') {
+    if (command) {
       const contactType = this.detectContactType(frame);
-      const reply = await handleDocumentCommand(
-        command.arg,
+      const reply = await handleCommand(
+        command,
         this.apiClient,
         this.adapter,
         contactType,
+        body.from.userid,
+        this.scheduleStore,
         this.config,
         this.logger,
       );
