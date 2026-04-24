@@ -7,15 +7,15 @@
 
 ## Current Milestone
 
-- [ ] **[v1.2 — WeCom Ecosystem Extension](ROADMAP.md)** — WeCom API client, Docker Compose, document reading, schedule management
+- [x] **[v1.2 — WeCom Ecosystem Extension](ROADMAP.md)** — WeCom API client, Docker Compose, document reading, schedule management
 
 ## Phases
 
 - [x] **Phase 7: WeCom API Client Foundation** — SDK obtains, caches, and auto-refreshes access_token; exposed in public API
 - [x] **Phase 8: Docker Compose Deployment** — One-command local deployment with health checks and persistent data volumes
 - [x] **Phase 9: Document Reading Integration** — Bot handles `/文档` command to download, analyze, and summarize WeCom micro-documents
-- [ ] **Phase 10: Schedule Management Integration** — Bot handles `/日程 创建` and `/日程 列表` commands with attendee mapping
-- [ ] **Phase 11: Testing & Integration** — Unit and integration tests cover all new v1.2 features
+- [x] **Phase 10: Schedule Management Integration** — Bot handles `/日程 创建` and `/日程 列表` commands with attendee mapping
+- [x] **Phase 11: Testing & Integration** — Unit and integration tests cover all new v1.2 features
 
 ---
 
@@ -71,7 +71,11 @@
   3. Bot confirms schedule creation with a summary showing title, time, and attendees
   4. User can send `/日程 列表` and the bot replies with upcoming schedules
   5. Messages that are not `/文档` or `/日程` commands fall back to normal AI chat
-**Plans**: TBD
+**Plans**: 4 plans — Complete
+- [x] 10-01-PLAN.md — WeCom API types + createSchedule/getSchedule methods (`src/types/wecom-api.ts`, `src/api.ts`)
+- [x] 10-02-PLAN.md — ScheduleStore + date-parser (`src/bot/schedule-store.ts`, `src/bot/date-parser.ts`)
+- [x] 10-03-PLAN.md — Command router refactor + schedule handlers (`src/bot/commands/index.ts`, `src/bot/commands/schedule.ts`, `src/bot/index.ts`)
+- [x] 10-04-PLAN.md — Unit tests for all new code (`src/bot/*.test.ts`, `src/bot/commands/*.test.ts`)
 
 ### Phase 11: Testing & Integration
 **Goal**: All new v1.2 features have automated test coverage that catches regressions.
@@ -82,7 +86,10 @@
   2. Document download and analysis end-to-end flow is covered by integration tests
   3. Schedule create and query commands are covered by integration tests
   4. Command parser and router logic is covered by unit tests
-**Plans**: TBD
+**Plans**: 3 plans — Complete
+- [x] 11-01-PLAN.md — WeComApiClient method tests (`src/api.test.ts`)
+- [x] 11-02-PLAN.md — E2E document command test (`__tests__/bot.document.e2e.test.ts`)
+- [x] 11-03-PLAN.md — E2E schedule command test (`__tests__/bot.schedule.e2e.test.ts`)
 
 ---
 
@@ -96,8 +103,8 @@
 | 7. WeCom API Client Foundation | v1.2 | 2/2 | Complete | 2026-04-21 |
 | 8. Docker Compose Deployment | v1.2 | 3/3 | Complete | 2026-04-22 |
 | 9. Document Reading Integration | v1.2 | 3/3 | Complete | 2026-04-23 |
-| 10. Schedule Management Integration | v1.2 | 0/TBD | Not started | - |
-| 11. Testing & Integration | v1.2 | 0/TBD | Not started | - |
+| 10. Schedule Management Integration | v1.2 | 4/4 | Complete | 2026-04-24 |
+| 11. Testing & Integration | v1.2 | 3/3 | Complete | 2026-04-24 |
 
 ---
 
@@ -135,4 +142,4 @@
 
 ---
 
-*Last updated: 2026-04-23*
+*Last updated: 2026-04-24*
