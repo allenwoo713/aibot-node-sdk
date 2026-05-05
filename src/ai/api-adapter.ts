@@ -118,7 +118,9 @@ export class AnthropicApiAdapter implements AiBackend {
       err?.code === 'ETIMEDOUT' ||
       err?.code === 'ECONNRESET' ||
       err?.code === 'ENOTFOUND' ||
-      (err instanceof Error && err.message?.toLowerCase().includes('timeout'))
+      err?.code === 'ECONNREFUSED' ||
+      err?.name === 'AbortError' ||
+      (typeof err?.message === 'string' && err.message.toLowerCase().includes('timeout'))
     ) {
       return { errorCode: 'retryable', retryable: true, fallbackMessage: this.fallbackRetryable };
     }
