@@ -122,7 +122,11 @@ export class TokenManager {
     if (process.platform !== 'win32') {
       const tmpPath = `${this.tokenFilePath}.tmp`;
       await fs.writeFile(tmpPath, tokenData, { encoding: 'utf-8', mode: 0o600 });
-      await fs.rename(tmpPath, this.tokenFilePath);
+      try {
+        await fs.rename(tmpPath, this.tokenFilePath);
+      } catch {
+        await fs.writeFile(this.tokenFilePath, tokenData, 'utf-8');
+      }
     } else {
       await fs.writeFile(this.tokenFilePath, tokenData, 'utf-8');
     }

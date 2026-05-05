@@ -37,6 +37,7 @@ describe('TokenManager', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     cleanupTokenFile();
     vi.restoreAllMocks();
   });
